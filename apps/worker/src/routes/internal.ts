@@ -1,5 +1,7 @@
 import type { FastifyPluginAsync } from 'fastify';
 import multipart from '@fastify/multipart';
+import { sql } from 'drizzle-orm';
+import { db, leads } from '@jt/db';
 import type { Scheduler } from '../jobs/scheduler.js';
 import { importTintimCsv } from '../services/tintim-import.js';
 import { logger } from '../lib/logger.js';
@@ -37,13 +39,16 @@ export const internalRoutes: FastifyPluginAsync<InternalRoutesOptions> = async (
     }
   });
 
-  app.post('/import-tintim', async (request, reply) => {
+  app.post<{ Querystring: { instance?: string } }>('/import-tintim', async (request, reply) => {
+    const waInstance = request.query.instance?.trim();
+    if (!waInstance) {
+      return reply.code(400).send({ error: 'missing ?instance=<name> query param' });
+    }
+
     const data = await request.file();
     if (!data) {
       return reply.code(400).send({ error: 'missing file field (multipart/form-data)' });
     }
-    const instanceField = data.fields.instance as { value?: string } | undefined;
-    const waInstance = instanceField?.value?.trim() || 'jt-ca02';
 
     try {
       const buffer = await data.toBuffer();
@@ -54,5 +59,19 @@ export const internalRoutes: FastifyPluginAsync<InternalRoutesOptions> = async (
       log.error({ err }, 'tintim import failed');
       return reply.code(500).send({ error: (err as Error).message });
     }
+  });
+
+  /**
+   * Apaga todos os leads que foram criados/atualizados via import Tintim.
+   * Identifica pela chave raw->'tintimImport'. Não toca em leads reais (Z-API/GHL).
+   * Útil pra reimportar quando houver erro.
+   */
+  app.post('/tintim-rollback', async (_request, _reply) => {
+    const result = await db
+      .delete(leads)
+      .where(sql`${leads.raw} ? 'tintimImport'`)
+      .returning({ id: leads.id });
+    log.warn({ deleted: result.length }, 'tintim rollback executed');
+    return { ok: true, deleted: result.length };
   });
 };
