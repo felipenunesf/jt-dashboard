@@ -26,8 +26,10 @@ export interface LeadRow {
 /**
  * Lista leads com filtro de período + origem + busca opcional.
  */
-export async function listLeads(filters: QueryFilters & { search?: string }): Promise<LeadRow[]> {
-  const { from, to, source, search } = filters;
+export async function listLeads(
+  filters: QueryFilters & { search?: string; instance?: string },
+): Promise<LeadRow[]> {
+  const { from, to, source, search, instance } = filters;
 
   const sourceFilter =
     source === 'whatsapp'
@@ -35,6 +37,8 @@ export async function listLeads(filters: QueryFilters & { search?: string }): Pr
       : source === 'site_ghl'
         ? sql`AND l.source = 'site_ghl'`
         : sql``;
+
+  const instanceFilter = instance ? sql`AND l.wa_instance = ${instance}` : sql``;
 
   const searchFilter = search
     ? sql`AND (
@@ -88,6 +92,7 @@ export async function listLeads(filters: QueryFilters & { search?: string }): Pr
     WHERE l.first_seen_at::date BETWEEN ${from}::date AND ${to}::date
       AND l.ad_id IS NOT NULL
       ${sourceFilter}
+      ${instanceFilter}
       ${searchFilter}
     ORDER BY l.first_seen_at DESC
     LIMIT 500

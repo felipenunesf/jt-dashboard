@@ -3,23 +3,33 @@ import { FilterBar } from '@/components/filter-bar';
 import { parseSourceParam } from '@/lib/parse-params';
 import { LeadStatusBadge } from '@/components/lead-status-badge';
 import { listLeads } from '@/lib/queries/leads';
-import { daysAgoIso, formatBRL, todayIso } from '@/lib/format';
+import { daysAgoIso, formatBRL, formatDateTimeBr, formatWaInstance, todayIso } from '@/lib/format';
 import type { LeadSource } from '@/lib/queries/overview';
 
 export const dynamic = 'force-dynamic';
 
+const VALID_INSTANCES = new Set(['jt-ca02', 'jt-ca03']);
+
 export default async function LeadsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ from?: string; to?: string; source?: string; q?: string }>;
+  searchParams: Promise<{
+    from?: string;
+    to?: string;
+    source?: string;
+    q?: string;
+    instance?: string;
+  }>;
 }) {
   const params = await searchParams;
   const from = params.from ?? daysAgoIso(30);
   const to = params.to ?? todayIso();
   const source: LeadSource = parseSourceParam(params.source);
   const search = params.q?.trim() || undefined;
+  const instance =
+    params.instance && VALID_INSTANCES.has(params.instance) ? params.instance : undefined;
 
-  const leads = await listLeads({ from, to, source, search });
+  const leads = await listLeads({ from, to, source, search, instance });
 
   return (
     <main className="p-8 max-w-[1400px] mx-auto">
@@ -52,7 +62,7 @@ export default async function LeadsPage({
       </div>
 
       <div className="mt-6">
-        <FilterBar from={from} to={to} source={source} />
+        <FilterBar from={from} to={to} source={source} instance={instance} showInstanceFilter />
       </div>
 
       {leads.length === 0 ? (
@@ -66,6 +76,7 @@ export default async function LeadsPage({
               <tr className="text-left text-xs font-medium text-slate-500 uppercase tracking-wide">
                 <th className="px-4 py-3">Lead</th>
                 <th className="px-4 py-3">Origem</th>
+                <th className="px-4 py-3">Número</th>
                 <th className="px-4 py-3">Status</th>
                 <th className="px-4 py-3">Anúncio</th>
                 <th className="px-4 py-3">Atribuição</th>
@@ -91,6 +102,9 @@ export default async function LeadsPage({
                       {lead.source === 'whatsapp' ? 'WhatsApp' : 'Site'}
                     </span>
                   </td>
+                  <td className="px-4 py-3 text-xs text-slate-600 tabular-nums">
+                    {formatWaInstance(lead.wa_instance)}
+                  </td>
                   <td className="px-4 py-3">
                     <LeadStatusBadge status={lead.status} />
                   </td>
@@ -113,12 +127,7 @@ export default async function LeadsPage({
                     {lead.purchase_value ? formatBRL(Number(lead.purchase_value)) : '—'}
                   </td>
                   <td className="px-4 py-3 text-right text-xs text-slate-500">
-                    {new Date(lead.first_seen_at).toLocaleString('pt-BR', {
-                      day: '2-digit',
-                      month: '2-digit',
-                      hour: '2-digit',
-                      minute: '2-digit',
-                    })}
+                    {formatDateTimeBr(lead.first_seen_at)}
                   </td>
                 </tr>
               ))}

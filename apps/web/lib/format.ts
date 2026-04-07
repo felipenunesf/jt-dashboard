@@ -49,3 +49,35 @@ export function daysAgoIso(days: number): string {
   d.setDate(d.getDate() - days);
   return d.toISOString().slice(0, 10);
 }
+
+/**
+ * Formata timestamp ISO como "dd/MM, HH:mm" no fuso America/Sao_Paulo.
+ */
+export function formatDateTimeBr(iso: string | null | undefined): string {
+  if (!iso) return '—';
+  return new Date(iso).toLocaleString('pt-BR', {
+    day: '2-digit',
+    month: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    timeZone: 'America/Sao_Paulo',
+  });
+}
+
+/**
+ * Mapeia nome interno da wa_instance pro label exibido no dashboard.
+ */
+const WA_INSTANCE_LABELS: Record<string, string> = {
+  'jt-ca02': '2544',
+  'jt-ca03': '6139',
+};
+
+export function formatWaInstance(instance: string | null | undefined): string {
+  if (!instance) return '—';
+  return WA_INSTANCE_LABELS[instance] ?? instance;
+}
+
+export const WA_INSTANCES: Array<{ value: string; label: string }> = [
+  { value: 'jt-ca02', label: '2544' },
+  { value: 'jt-ca03', label: '6139' },
+];

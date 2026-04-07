@@ -3,6 +3,7 @@
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import { useTransition } from 'react';
 import type { LeadSource } from '@/lib/queries/overview';
+import { WA_INSTANCES } from '@/lib/format';
 
 const PRESETS = [
   { label: 'Hoje', days: 0 },
@@ -27,10 +28,19 @@ interface FilterBarProps {
   from: string;
   to: string;
   source: LeadSource;
+  instance?: string;
   showSourceFilter?: boolean;
+  showInstanceFilter?: boolean;
 }
 
-export function FilterBar({ from, to, source, showSourceFilter = true }: FilterBarProps) {
+export function FilterBar({
+  from,
+  to,
+  source,
+  instance,
+  showSourceFilter = true,
+  showInstanceFilter = false,
+}: FilterBarProps) {
   const router = useRouter();
   const pathname = usePathname();
   const params = useSearchParams();
@@ -39,7 +49,11 @@ export function FilterBar({ from, to, source, showSourceFilter = true }: FilterB
   function update(updates: Record<string, string>) {
     const sp = new URLSearchParams(params.toString());
     for (const [key, value] of Object.entries(updates)) {
-      sp.set(key, value);
+      if (value === '') {
+        sp.delete(key);
+      } else {
+        sp.set(key, value);
+      }
     }
     startTransition(() => {
       router.push(`${pathname}?${sp.toString()}`);
@@ -98,6 +112,34 @@ export function FilterBar({ from, to, source, showSourceFilter = true }: FilterB
                 }`}
               >
                 {s.label}
+              </button>
+            ))}
+          </div>
+        )}
+
+        {showInstanceFilter && (
+          <div className="flex items-center gap-2 bg-white border border-slate-200 rounded-lg p-1">
+            <button
+              onClick={() => update({ instance: '' })}
+              disabled={isPending}
+              className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
+                !instance ? 'bg-brand-600 text-white' : 'text-slate-600 hover:bg-slate-100'
+              }`}
+            >
+              Todos nºs
+            </button>
+            {WA_INSTANCES.map((i) => (
+              <button
+                key={i.value}
+                onClick={() => update({ instance: i.value })}
+                disabled={isPending}
+                className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
+                  instance === i.value
+                    ? 'bg-brand-600 text-white'
+                    : 'text-slate-600 hover:bg-slate-100'
+                }`}
+              >
+                {i.label}
               </button>
             ))}
           </div>
