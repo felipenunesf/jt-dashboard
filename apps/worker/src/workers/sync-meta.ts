@@ -229,7 +229,6 @@ export async function syncInsightsForAccount(
   log.debug({ accountId, knownAds: knownAdIds.size }, 'loaded known ads');
 
   let totalRows = 0;
-  let skipped = 0;
 
   for (const day of days) {
     let insights: MetaInsightRaw[] = [];
@@ -245,12 +244,34 @@ export async function syncInsightsForAccount(
       continue;
     }
 
-    // Filtra ads desconhecidos (DELETED/ARCHIVED não estão em meta_ads)
-    const filtered = insights.filter((insight) => {
-      if (knownAdIds.has(insight.ad_id)) return true;
-      skipped++;
-      return false;
-    });
+    // Auto-stub pra ads desconhecidos: cria meta_ads mínimo pra satisfazer FK
+    // e não perder spend histórico. Acontece quando o catalog sync ainda não
+    // pegou o ad (primeira rodada) ou quando o ad foi criado/deletado rapidamente.
+    const unknownAdIds = new Set<string>();
+    for (const insight of insights) {
+      if (!knownAdIds.has(insight.ad_id)) {
+        unknownAdIds.add(insight.ad_id);
+      }
+    }
+
+    if (unknownAdIds.size > 0) {
+      const stubRows: NewMetaAd[] = Array.from(unknownAdIds).map((adId) => ({
+        adId,
+        accountId,
+        status: 'UNKNOWN',
+        adName: null,
+        adsetId: null,
+        adsetName: null,
+        campaignId: null,
+        campaignName: null,
+        destinationType: null,
+      }));
+      await db.insert(metaAds).values(stubRows).onConflictDoNothing({ target: metaAds.adId });
+      for (const id of unknownAdIds) knownAdIds.add(id);
+      log.info({ accountId, day, stubbed: unknownAdIds.size }, 'auto-stubbed unknown ads');
+    }
+
+    const filtered = insights;
 
     if (filtered.length === 0) continue;
 
@@ -303,7 +324,7 @@ export async function syncInsightsForAccount(
     totalRows += rows.length;
   }
 
-  log.info({ accountId, totalRows, skipped }, 'insights synced');
+  log.info({ accountId, totalRows }, 'insights synced');
   return totalRows;
 }
 

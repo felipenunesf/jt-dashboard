@@ -101,8 +101,9 @@ export class MetaApiClient {
   }
 
   /**
-   * Lista anúncios de uma conta com paginação automática.
-   * Status filtrado para ACTIVE + PAUSED (ignora DELETED/ARCHIVED).
+   * Lista TODOS os anúncios de uma conta (inclui DELETED, ARCHIVED, WITH_ISSUES).
+   * Importante pra reconciliar totais históricos de spend com o Ads Manager —
+   * campanhas antigas paradas ainda contribuem pro total do período.
    */
   async listAds(accountId: string): Promise<MetaAdRaw[]> {
     const fields = [
@@ -118,7 +119,6 @@ export class MetaApiClient {
     const params = new URLSearchParams({
       fields,
       limit: '500',
-      effective_status: JSON.stringify(['ACTIVE', 'PAUSED']),
     });
 
     const url = `${this.baseUrl}/${normalizeAccountId(accountId)}/ads?${params.toString()}`;
