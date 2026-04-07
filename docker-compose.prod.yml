@@ -1,82 +1,98 @@
-# JT Dashboard — Production Stack (Portainer)
+# JT Dashboard — Production Stack (Docker Swarm + Portainer)
 #
-# Antes de subir, configurar variáveis de ambiente em um arquivo `.env`
-# ao lado deste compose, ou via Portainer Stack Environment.
+# Reverse proxy: Traefik v2.11.3 já existente (stack `traefik`)
+# Network compartilhada: network_swarm_public (overlay, external)
+# Cert resolver: letsencryptresolver (Let's Encrypt HTTP challenge)
 #
-# Variáveis obrigatórias:
-#   POSTGRES_PASSWORD
-#   AUTH_SECRET (32+ chars)
+# Variáveis obrigatórias (configurar em Portainer → Environment variables):
+#   GITHUB_REPOSITORY        ex: felipenunesfraga/jt-dashboard
+#   IMAGE_TAG                default: latest
+#   POSTGRES_PASSWORD        senha forte 20+ chars
+#   AUTH_SECRET              32+ chars (gerar com: openssl rand -base64 48)
 #   ADMIN_EMAIL
-#   ADMIN_PASSWORD_HASH (gerado via bcrypt — escapar $ com $$ no compose)
+#   ADMIN_PASSWORD_HASH      bcrypt — escapar $ como $$ no compose
 #   META_SYSTEM_USER_TOKEN
-#   META_ACCOUNTS (JSON)
-#   GITHUB_REPOSITORY (ex: felipenunesfraga/jt-dashboard, usado para puxar imagens)
+#   META_ACCOUNTS            JSON em uma linha
 #
-# Variáveis opcionais:
-#   META_TEST_EVENT_CODE
-#   META_CAPI_DRY_RUN (default: false em prod)
+# Opcionais:
+#   META_API_VERSION         default: v22.0
+#   META_TEST_EVENT_CODE     vazio em prod
+#   META_CAPI_DRY_RUN        default: false
 #   ZAPI_INSTANCES, WHATSAPP_WEBHOOK_SECRET
 #   GHL_PRIVATE_TOKEN, GHL_LOCATION_ID, GHL_WEBHOOK_SECRET
-#   IMAGE_TAG (default: latest — pra fazer rollback, especifique uma tag)
+#   BACKUP_RETENTION_DAYS    default: 14
 #
 # Auto-deploy:
-#   Watchtower monitora as imagens ghcr.io a cada 30s e atualiza
-#   automaticamente quando há nova versão. Push pra `main` no GitHub →
-#   GitHub Actions builda e empurra novas imagens → Watchtower atualiza.
+#   Shepherd monitora ghcr.io a cada 5min e atualiza services com label
+#   `shepherd.enable=true`. Push pra main → GitHub Actions builda → Shepherd deploya.
 #
-# Domínios via Traefik (presumindo network "traefik_public" externa):
-#   dashboard.junqueiraeteixeira.adv.br → web
-#   webhooks.junqueiraeteixeira.adv.br  → worker
+# Migrations (rodar 1x após primeiro deploy):
+#   docker exec -it $(docker ps -q -f name=jt_worker) \
+#     node --import tsx packages/db/src/migrate.ts
+
+version: '3.8'
 
 services:
   postgres:
     image: postgres:16-alpine
-    container_name: jt-postgres
-    restart: unless-stopped
     environment:
       POSTGRES_DB: jt_dashboard
       POSTGRES_USER: jt
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     volumes:
       - jt_postgres_data:/var/lib/postgresql/data
-      - ./backups:/backups
+      - jt_backups:/backups
+    networks:
+      - jt_internal
     healthcheck:
       test: ['CMD-SHELL', 'pg_isready -U jt -d jt_dashboard']
       interval: 10s
       timeout: 5s
       retries: 5
-    networks:
-      - jt_internal
-    labels:
-      - 'com.centurylinklabs.watchtower.enable=false'
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: any
+        delay: 10s
+      placement:
+        constraints:
+          - node.role == manager
+      resources:
+        limits:
+          memory: 1G
 
   redis:
     image: redis:7-alpine
-    container_name: jt-redis
-    restart: unless-stopped
-    command: ['redis-server', '--maxmemory', '256mb', '--maxmemory-policy', 'allkeys-lru']
+    command:
+      [
+        'redis-server',
+        '--maxmemory',
+        '256mb',
+        '--maxmemory-policy',
+        'allkeys-lru',
+        '--appendonly',
+        'yes',
+      ]
     volumes:
       - jt_redis_data:/data
+    networks:
+      - jt_internal
     healthcheck:
       test: ['CMD', 'redis-cli', 'ping']
       interval: 10s
       timeout: 3s
       retries: 5
-    networks:
-      - jt_internal
-    labels:
-      - 'com.centurylinklabs.watchtower.enable=false'
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: any
+        delay: 10s
+      resources:
+        limits:
+          memory: 384M
 
   worker:
     image: ghcr.io/${GITHUB_REPOSITORY}-worker:${IMAGE_TAG:-latest}
-    container_name: jt-worker
-    restart: unless-stopped
-    pull_policy: always
-    depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
     environment:
       NODE_ENV: production
       LOG_LEVEL: info
@@ -96,25 +112,31 @@ services:
       GHL_WEBHOOK_SECRET: ${GHL_WEBHOOK_SECRET:-}
     networks:
       - jt_internal
-      - traefik_public
-    labels:
-      - 'com.centurylinklabs.watchtower.enable=true'
-      - 'traefik.enable=true'
-      - 'traefik.docker.network=traefik_public'
-      - 'traefik.http.routers.jt-worker.rule=Host(`webhooks.junqueiraeteixeira.adv.br`)'
-      - 'traefik.http.routers.jt-worker.entrypoints=websecure'
-      - 'traefik.http.routers.jt-worker.tls=true'
-      - 'traefik.http.routers.jt-worker.tls.certresolver=letsencrypt'
-      - 'traefik.http.services.jt-worker.loadbalancer.server.port=4000'
+      - network_swarm_public
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: any
+        delay: 10s
+      update_config:
+        order: start-first
+        failure_action: rollback
+        delay: 10s
+      resources:
+        limits:
+          memory: 768M
+      labels:
+        - 'shepherd.enable=true'
+        - 'traefik.enable=true'
+        - 'traefik.swarm.network=network_swarm_public'
+        - 'traefik.http.routers.jt-worker.rule=Host(`webhooks.junqueiraeteixeira.adv.br`)'
+        - 'traefik.http.routers.jt-worker.entrypoints=websecure'
+        - 'traefik.http.routers.jt-worker.tls=true'
+        - 'traefik.http.routers.jt-worker.tls.certresolver=letsencryptresolver'
+        - 'traefik.http.services.jt-worker.loadbalancer.server.port=4000'
 
   web:
     image: ghcr.io/${GITHUB_REPOSITORY}-web:${IMAGE_TAG:-latest}
-    container_name: jt-web
-    restart: unless-stopped
-    pull_policy: always
-    depends_on:
-      postgres:
-        condition: service_healthy
     environment:
       NODE_ENV: production
       DATABASE_URL: postgres://jt:${POSTGRES_PASSWORD}@postgres:5432/jt_dashboard
@@ -124,80 +146,104 @@ services:
       ADMIN_PASSWORD_HASH: ${ADMIN_PASSWORD_HASH}
     networks:
       - jt_internal
-      - traefik_public
-    labels:
-      - 'com.centurylinklabs.watchtower.enable=true'
-      - 'traefik.enable=true'
-      - 'traefik.docker.network=traefik_public'
-      - 'traefik.http.routers.jt-web.rule=Host(`dashboard.junqueiraeteixeira.adv.br`)'
-      - 'traefik.http.routers.jt-web.entrypoints=websecure'
-      - 'traefik.http.routers.jt-web.tls=true'
-      - 'traefik.http.routers.jt-web.tls.certresolver=letsencrypt'
-      - 'traefik.http.services.jt-web.loadbalancer.server.port=3000'
+      - network_swarm_public
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: any
+        delay: 10s
+      update_config:
+        order: start-first
+        failure_action: rollback
+        delay: 10s
+      resources:
+        limits:
+          memory: 768M
+      labels:
+        - 'shepherd.enable=true'
+        - 'traefik.enable=true'
+        - 'traefik.swarm.network=network_swarm_public'
+        - 'traefik.http.routers.jt-web.rule=Host(`dashboard.junqueiraeteixeira.adv.br`)'
+        - 'traefik.http.routers.jt-web.entrypoints=websecure'
+        - 'traefik.http.routers.jt-web.tls=true'
+        - 'traefik.http.routers.jt-web.tls.certresolver=letsencryptresolver'
+        - 'traefik.http.services.jt-web.loadbalancer.server.port=3000'
 
-  # Watchtower — auto-deploy: monitora ghcr.io e atualiza containers
-  # marcados com `com.centurylinklabs.watchtower.enable=true`
-  watchtower:
-    image: containrrr/watchtower:latest
-    container_name: jt-watchtower
-    restart: unless-stopped
+  # Shepherd — Watchtower equivalente pra Swarm. Atualiza services com
+  # label `shepherd.enable=true` quando há nova imagem em ghcr.io
+  shepherd:
+    image: containrrr/shepherd:latest
     environment:
-      WATCHTOWER_LABEL_ENABLE: 'true'
-      WATCHTOWER_CLEANUP: 'true'
-      WATCHTOWER_INCLUDE_RESTARTING: 'true'
-      WATCHTOWER_POLL_INTERVAL: '30'
-      WATCHTOWER_ROLLING_RESTART: 'true'
-      WATCHTOWER_NO_STARTUP_MESSAGE: 'true'
       TZ: America/Sao_Paulo
-      # Auth GHCR — Watchtower precisa ler /root/.docker/config.json
-      # Setup: docker login ghcr.io -u USER -p PAT (no host)
-      # E o config.json é montado no container abaixo
+      SLEEP_TIME: '300'
+      FILTER_SERVICES: 'label=shepherd.enable=true'
+      ROLLBACK_ON_FAILURE: 'true'
+      WITH_REGISTRY_AUTH: 'true'
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
-      - ${DOCKER_CONFIG:-~/.docker}/config.json:/config.json:ro
     networks:
       - jt_internal
-    labels:
-      - 'com.centurylinklabs.watchtower.enable=false'
+    deploy:
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
+      restart_policy:
+        condition: any
+        delay: 30s
+      resources:
+        limits:
+          memory: 64M
 
   # Backup diário do Postgres às 03:00 BRT (06:00 UTC)
   backup:
     image: postgres:16-alpine
-    container_name: jt-backup
-    restart: unless-stopped
-    depends_on:
-      postgres:
-        condition: service_healthy
     environment:
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      PGPASSWORD: ${POSTGRES_PASSWORD}
       BACKUP_RETENTION_DAYS: ${BACKUP_RETENTION_DAYS:-14}
     volumes:
-      - ./backups:/backups
-      - ./scripts/backup.sh:/usr/local/bin/backup.sh:ro
+      - jt_backups:/backups
+    networks:
+      - jt_internal
     entrypoint: ['/bin/sh', '-c']
     command:
       - |
-        echo "Backup loop iniciado — diário às 03:00 BRT"
+        echo "Backup loop iniciado — diário às 03:00 BRT (06:00 UTC)"
         while true; do
           NOW=$$(date -u +%s)
-          NEXT=$$(date -u -d "today 06:00" +%s 2>/dev/null || echo $$(($$NOW + 3600)))
+          NEXT=$$(date -u -d "today 06:00" +%s 2>/dev/null || echo $$(($$NOW + 86400)))
           if [ "$$NEXT" -le "$$NOW" ]; then NEXT=$$((NEXT + 86400)); fi
           SLEEP=$$((NEXT - NOW))
           echo "Próximo backup em $$SLEEP segundos"
           sleep $$SLEEP
-          /usr/local/bin/backup.sh
+          STAMP=$$(date -u +%Y%m%d-%H%M%S)
+          OUT="/backups/jt_dashboard_$$STAMP.sql.gz"
+          echo "Iniciando backup → $$OUT"
+          pg_dump -h postgres -U jt -d jt_dashboard | gzip > "$$OUT" \
+            && echo "Backup OK ($$OUT)" \
+            || echo "Backup FALHOU"
+          find /backups -name "jt_dashboard_*.sql.gz" -mtime +$${BACKUP_RETENTION_DAYS} -delete
         done
-    networks:
-      - jt_internal
-    labels:
-      - 'com.centurylinklabs.watchtower.enable=false'
+    deploy:
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
+      restart_policy:
+        condition: any
+        delay: 60s
+      resources:
+        limits:
+          memory: 128M
 
 volumes:
   jt_postgres_data:
   jt_redis_data:
+  jt_backups:
 
 networks:
   jt_internal:
-    driver: bridge
-  traefik_public:
+    driver: overlay
+    attachable: true
+  network_swarm_public:
     external: true
