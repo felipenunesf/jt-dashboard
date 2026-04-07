@@ -124,7 +124,25 @@ export async function processWaWebhook(data: ProcessWaJobData): Promise<ProcessW
   const messageRow = await insertMessage(normalized, lead.id, settings);
 
   // ===== CAPI events =====
+  // Só enviamos CAPI se o lead tem atribuição (ctwa_clid ou adId resolvido).
+  // Leads orgânicos (mensagem direta sem vir de ad) não precisam de CAPI —
+  // Meta rejeita com 400 e o dashboard já filtra por ad_id IS NOT NULL.
   const capiEnqueued: CapiEventName[] = [];
+
+  if (!lead.hasAttribution) {
+    log.debug(
+      { leadId: lead.id, instance: normalized.instance },
+      'skipping capi — lead without attribution',
+    );
+    await markProcessed(inboxId);
+    return {
+      status: 'processed',
+      leadId: lead.id,
+      messageId: messageRow.id,
+      classification: messageRow.classification ?? undefined,
+      capiEnqueued,
+    };
+  }
 
   // 1. Lead novo entra → Contact (usa wa_message_id da 1ª mensagem como triggerId)
   if (lead.isNew) {
@@ -197,6 +215,8 @@ interface UpsertedLead {
   id: string;
   isNew: boolean;
   previousStatus: string | null;
+  /** Se true, o lead está atribuído a um ad (ctwa_clid ou welcome_message). */
+  hasAttribution: boolean;
 }
 
 async function upsertLead(msg: NormalizedMessage, appSettings: AllSettings): Promise<UpsertedLead> {
@@ -237,7 +257,12 @@ async function upsertLead(msg: NormalizedMessage, appSettings: AllSettings): Pro
       log.info({ leadId: lead.id, adId: adIdResolved }, 'lead enriched with referral');
     }
 
-    return { id: lead.id, isNew: false, previousStatus: lead.status };
+    return {
+      id: lead.id,
+      isNew: false,
+      previousStatus: lead.status,
+      hasAttribution: Boolean(lead.adId ?? msg.referral?.ctwa_clid),
+    };
   }
 
   // Lead novo: tentar atribuir via referral OU welcome_message
@@ -292,7 +317,7 @@ async function upsertLead(msg: NormalizedMessage, appSettings: AllSettings): Pro
     'new whatsapp lead',
   );
 
-  return { id, isNew: true, previousStatus: null };
+  return { id, isNew: true, previousStatus: null, hasAttribution: Boolean(adId) };
 }
 
 /**

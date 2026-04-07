@@ -190,7 +190,9 @@ function tryFlatFormat(raw: unknown, fallbackInstance: string): NormalizedMessag
   return {
     messageId: d.messageId,
     phone: d.phone,
-    instance: d.instanceId ?? fallbackInstance,
+    // Sempre usa o path param (/webhooks/whatsapp/:instance) como canônico.
+    // O instanceId cru do Z-API é um hash longo que não queremos no banco.
+    instance: fallbackInstance,
     contactName: d.senderName ?? d.chatName,
     text,
     direction: d.fromMe ? 'outbound' : 'inbound',
@@ -213,7 +215,7 @@ function tryDataFormat(raw: unknown, fallbackInstance: string): NormalizedMessag
   return {
     messageId: d.id,
     phone,
-    instance: parsed.data.instance ?? fallbackInstance,
+    instance: fallbackInstance,
     contactName: d.sender?.name,
     text,
     direction: 'inbound', // formato data não marca direção facilmente; default inbound
