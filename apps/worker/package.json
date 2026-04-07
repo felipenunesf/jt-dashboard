@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "tsx watch src/index.ts",
     "build": "echo 'no build step — runs via tsx in production for monorepo simplicity'",
-    "start": "tsx src/index.ts",
+    "migrate": "tsx ../../packages/db/src/migrate.ts",
+    "start": "pnpm migrate && tsx src/index.ts",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
