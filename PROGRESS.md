@@ -1,6 +1,6 @@
 # PROGRESS — JT Dashboard
 
-> **Última atualização**: 2026-04-07 (Fase 8 organização sênior + auto-deploy CI/CD finalizada — repo profissional pronto pra GitHub, deploy via push)
+> **Última atualização**: 2026-04-07 (Deploy em produção COMPLETO — dashboard no ar em dashboard.junqueiraeteixeira.adv.br, sync Meta rodando hourly)
 > **Cliente**: Felipe (consultor de tráfego pago JT Advocacia Médica)
 > **Plano completo**: `/Users/felipenunesfraga/.claude/plans/jaunty-wobbling-map.md`
 
@@ -8,69 +8,54 @@
 
 ## Status geral
 
-| Fase                             | Status          | Notas                                                                             |
-| -------------------------------- | --------------- | --------------------------------------------------------------------------------- |
-| 0 — Setup monorepo               | ✅ Completa     | pnpm + Drizzle + Postgres + Redis local                                           |
-| 1 — Sync Meta Marketing API      | ✅ Completa     | 160 ads, 144 insights rows, números batem com Ads Manager                         |
-| 2 — Dashboard read-only          | ✅ Completa     | Login + overview + tabela hierárquica funcionando                                 |
-| 3.0 — Spike validação CTWA Z-API | ⏸ Pendente      | Aguarda cliente criar conta Z-API                                                 |
-| 3.1 — Webhook WhatsApp           | ✅ Completa     | Receiver + worker + classificador testados E2E                                    |
-| 4 — Worker CAPI                  | ✅ Completa     | 4 eventos (Contact / Lead / CompleteRegistration / Purchase) — modo dry run ativo |
-| 5 — Integração GHL               | ✅ Completa     | Receiver + worker + builder site CAPI testados E2E (modo sem token)               |
-| 6 — Dashboard completo           | ✅ Completa     | Funnel chart + filtro origem + drill-down ad + página leads                       |
-| 7 — Hardening + Deploy           | ✅ Completa     | Health endpoint, pg_dump cron, Dockerfiles, compose Portainer, docs               |
-| 8 — Org sênior + Auto-deploy     | ✅ Completa     | README, ESLint, Husky, GitHub Actions, GHCR, Watchtower, docs/                    |
-| Deploy 1-6 — Subir em produção   | 🟡 Em andamento | Aguardando user reportar Portainer (Networks/Stacks) + criar DNS na Hostinger     |
+| Fase                             | Status      | Notas                                                                             |
+| -------------------------------- | ----------- | --------------------------------------------------------------------------------- |
+| 0 — Setup monorepo               | ✅ Completa | pnpm + Drizzle + Postgres + Redis local                                           |
+| 1 — Sync Meta Marketing API      | ✅ Completa | 160 ads, 144 insights rows, números batem com Ads Manager                         |
+| 2 — Dashboard read-only          | ✅ Completa | Login + overview + tabela hierárquica funcionando                                 |
+| 3.0 — Spike validação CTWA Z-API | ⏸ Pendente  | Aguarda cliente criar conta Z-API                                                 |
+| 3.1 — Webhook WhatsApp           | ✅ Completa | Receiver + worker + classificador testados E2E                                    |
+| 4 — Worker CAPI                  | ✅ Completa | 4 eventos (Contact / Lead / CompleteRegistration / Purchase) — modo dry run ativo |
+| 5 — Integração GHL               | ✅ Completa | Receiver + worker + builder site CAPI testados E2E (modo sem token)               |
+| 6 — Dashboard completo           | ✅ Completa | Funnel chart + filtro origem + drill-down ad + página leads                       |
+| 7 — Hardening + Deploy           | ✅ Completa | Health endpoint, pg_dump cron, Dockerfiles, compose Portainer, docs               |
+| 8 — Org sênior + Auto-deploy     | ✅ Completa | README, ESLint, Husky, GitHub Actions, GHCR, Shepherd, docs/                      |
+| Deploy — Subir em produção       | ✅ Completa | Stack no ar via Swarm + Traefik existente + Shepherd auto-deploy                  |
 
 ---
 
-## Próximo passo imediato
+## ✅ Produção no ar
 
-**Deploy em produção em andamento.** Servidor confirmado:
+- **Dashboard**: https://dashboard.junqueiraeteixeira.adv.br
+- **Webhooks**: https://webhooks.junqueiraeteixeira.adv.br
+- **Health**: https://webhooks.junqueiraeteixeira.adv.br/health
+- **Infra**: Hetzner VPS (Docker Swarm 29.0.1) + Traefik v2.11.3 (letsencryptresolver) + `network_swarm_public`
+- **Services rodando**: postgres, redis, worker, web, shepherd, backup (todos 1/1)
+- **Auto-deploy**: push em `main` → GitHub Actions build → GHCR → Shepherd poll 5min → redeploy
+- **Sync Meta**: hourly aos :05min (BullMQ repeatable); manual via `POST /internal/sync-meta`
+- **Backup**: pg_dump diário 03:00 BRT, retenção 14 dias
 
-- Hetzner VPS em `<HETZNER_VPS_IP>`
-- Portainer em `https://<PORTAINER_URL>`
-- Domínio: `junqueiraeteixeira.adv.br` (DNS na Hostinger, IP atual aponta pra Hostinger)
-- Subdomínios alvo: `dashboard.junqueiraeteixeira.adv.br` + `webhooks.junqueiraeteixeira.adv.br`
+## Pendências pós-deploy (não bloqueiam, mas precisam ser feitas)
 
-### Felipe precisa fazer 3 coisas em paralelo
+### Bloqueadores pra funcionalidade completa
 
-**A. Criar repositório GitHub** (~5 min):
+- [ ] **Z-API**: criar conta, rodar spike CTWA (Fase 3.0), configurar `ZAPI_INSTANCES` no Portainer
+- [ ] **GHL**: gerar Private Integration Token, setar `GHL_PRIVATE_TOKEN` + `GHL_LOCATION_ID`
+- [ ] **GHL Stage IDs**: descobrir via API os IDs de "qualificou" e "fechou contrato"
+- [ ] **Webhooks externos**: configurar Z-API e GHL pra apontarem pra `webhooks.junqueiraeteixeira.adv.br/webhooks/*`
 
-1. https://github.com/new → nome `jt-dashboard` → **Private**
-2. NÃO inicializar com README/license/gitignore (já temos)
-3. No terminal local:
-   ```bash
-   cd "/Users/felipenunesfraga/Desktop/Projetos/NEW TINTIM"
-   git init
-   git add .
-   git commit -m "chore: initial commit"
-   git branch -M main
-   git remote add origin https://github.com/SEUUSER/jt-dashboard.git
-   git push -u origin main
-   ```
-4. Verificar Actions rodando em `.../actions` (CI vai falhar até o `pnpm install` rodar limpo — ok)
+### Operação / segurança
 
-**B. Criar 2 DNS A records na Hostinger** (~5 min, propagação 5-30 min):
+- [ ] **Senha admin**: já trocada no deploy (não é mais `<DEV_PASSWORD>`) ✅
+- [ ] **UptimeRobot**: criar 2 monitors (dashboard + webhooks/health/live), intervalo 5min
+- [ ] **Hardening SSH**: fail2ban ou mudar porta padrão no Hetzner (IP foi exposto brevemente no histórico git antes do force-push)
+- [ ] **CAPI real**: quando `META_TEST_EVENT_CODE` for pego, já tá `DRY_RUN=false` em prod — primeiro evento vai pro pipeline real
 
-- `dashboard` → `<HETZNER_VPS_IP>` (TTL 300)
-- `webhooks` → `<HETZNER_VPS_IP>` (TTL 300)
+### Nice-to-have
 
-**C. Reportar Portainer** (necessário pra eu ajustar o compose):
-
-- Logar em `https://<PORTAINER_URL>`
-- Listar **Networks** (procurar: `traefik_public`, `npm_default`, ou similar)
-- Listar nomes das **Stacks**
-- Listar **Containers** com `traefik`, `nginx-proxy-manager` ou `caddy` no nome
-
-### Pendências externas (não bloqueiam o deploy básico)
-
-- Cliente cria conta **Z-API** → spike CTWA real (Fase 3.0)
-- Cliente gera **GHL Private Integration Token** → spike GHL
-- Cliente pega `META_TEST_EVENT_CODE` → desligar `META_CAPI_DRY_RUN` (já está
-  `false` no compose default — só ativar Test Events em dev local)
-- Trocar senha provisória `<DEV_PASSWORD>`
-- Configurar UptimeRobot apontando pra `/health` do worker
+- [ ] Registrar CTWA `onboarding_url` automaticamente em ads CTWA via script
+- [ ] Adicionar Grafana ou painel de logs centralizado
+- [ ] Alertas no worker pra sync failures (via Sentry ou Slack webhook)
 
 ---
 
