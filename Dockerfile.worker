@@ -1,0 +1,42 @@
+# syntax=docker/dockerfile:1.7
+# Worker (Fastify + BullMQ + cron)
+# Usa tsx em runtime — simplifica monorepo, sem etapa de build separada.
+# Worker é long-lived, não tem cold start crítico.
+
+FROM node:24-alpine AS deps
+RUN corepack enable && corepack prepare pnpm@10.33.0 --activate
+WORKDIR /app
+
+# Copia manifests do monorepo
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml tsconfig.base.json ./
+COPY apps/worker/package.json ./apps/worker/
+COPY packages/db/package.json ./packages/db/
+COPY packages/shared/package.json ./packages/shared/
+
+# Instala todas as deps (incluindo dev, pra ter tsx)
+RUN pnpm install --frozen-lockfile
+
+# ============================================================================
+
+FROM node:24-alpine AS runner
+RUN corepack enable && corepack prepare pnpm@10.33.0 --activate
+WORKDIR /app
+
+ENV NODE_ENV=production \
+    LOG_LEVEL=info
+
+# Copia node_modules + symlinks de workspace
+COPY --from=deps /app ./
+
+# Copia source code dos packages e do worker
+COPY apps/worker ./apps/worker
+COPY packages/db ./packages/db
+COPY packages/shared ./packages/shared
+
+# Healthcheck: usa o endpoint /health/live (raso, sem tocar DB)
+HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
+  CMD wget --quiet --spider --tries=1 --timeout=3 http://127.0.0.1:4000/health/live || exit 1
+
+EXPOSE 4000
+WORKDIR /app/apps/worker
+CMD ["pnpm", "start"]

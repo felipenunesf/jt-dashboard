@@ -1,0 +1,203 @@
+# JT Dashboard — Production Stack (Portainer)
+#
+# Antes de subir, configurar variáveis de ambiente em um arquivo `.env`
+# ao lado deste compose, ou via Portainer Stack Environment.
+#
+# Variáveis obrigatórias:
+#   POSTGRES_PASSWORD
+#   AUTH_SECRET (32+ chars)
+#   ADMIN_EMAIL
+#   ADMIN_PASSWORD_HASH (gerado via bcrypt — escapar $ com $$ no compose)
+#   META_SYSTEM_USER_TOKEN
+#   META_ACCOUNTS (JSON)
+#   GITHUB_REPOSITORY (ex: felipenunesfraga/jt-dashboard, usado para puxar imagens)
+#
+# Variáveis opcionais:
+#   META_TEST_EVENT_CODE
+#   META_CAPI_DRY_RUN (default: false em prod)
+#   ZAPI_INSTANCES, WHATSAPP_WEBHOOK_SECRET
+#   GHL_PRIVATE_TOKEN, GHL_LOCATION_ID, GHL_WEBHOOK_SECRET
+#   IMAGE_TAG (default: latest — pra fazer rollback, especifique uma tag)
+#
+# Auto-deploy:
+#   Watchtower monitora as imagens ghcr.io a cada 30s e atualiza
+#   automaticamente quando há nova versão. Push pra `main` no GitHub →
+#   GitHub Actions builda e empurra novas imagens → Watchtower atualiza.
+#
+# Domínios via Traefik (presumindo network "traefik_public" externa):
+#   dashboard.junqueiraeteixeira.adv.br → web
+#   webhooks.junqueiraeteixeira.adv.br  → worker
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: jt-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: jt_dashboard
+      POSTGRES_USER: jt
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - jt_postgres_data:/var/lib/postgresql/data
+      - ./backups:/backups
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U jt -d jt_dashboard']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - jt_internal
+    labels:
+      - 'com.centurylinklabs.watchtower.enable=false'
+
+  redis:
+    image: redis:7-alpine
+    container_name: jt-redis
+    restart: unless-stopped
+    command: ['redis-server', '--maxmemory', '256mb', '--maxmemory-policy', 'allkeys-lru']
+    volumes:
+      - jt_redis_data:/data
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    networks:
+      - jt_internal
+    labels:
+      - 'com.centurylinklabs.watchtower.enable=false'
+
+  worker:
+    image: ghcr.io/${GITHUB_REPOSITORY}-worker:${IMAGE_TAG:-latest}
+    container_name: jt-worker
+    restart: unless-stopped
+    pull_policy: always
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      LOG_LEVEL: info
+      DATABASE_URL: postgres://jt:${POSTGRES_PASSWORD}@postgres:5432/jt_dashboard
+      REDIS_URL: redis://redis:6379
+      WORKER_PORT: 4000
+      WORKER_PUBLIC_URL: https://webhooks.junqueiraeteixeira.adv.br
+      META_SYSTEM_USER_TOKEN: ${META_SYSTEM_USER_TOKEN}
+      META_ACCOUNTS: ${META_ACCOUNTS}
+      META_API_VERSION: ${META_API_VERSION:-v22.0}
+      META_TEST_EVENT_CODE: ${META_TEST_EVENT_CODE:-}
+      META_CAPI_DRY_RUN: ${META_CAPI_DRY_RUN:-false}
+      ZAPI_INSTANCES: ${ZAPI_INSTANCES:-}
+      WHATSAPP_WEBHOOK_SECRET: ${WHATSAPP_WEBHOOK_SECRET:-}
+      GHL_PRIVATE_TOKEN: ${GHL_PRIVATE_TOKEN:-}
+      GHL_LOCATION_ID: ${GHL_LOCATION_ID:-}
+      GHL_WEBHOOK_SECRET: ${GHL_WEBHOOK_SECRET:-}
+    networks:
+      - jt_internal
+      - traefik_public
+    labels:
+      - 'com.centurylinklabs.watchtower.enable=true'
+      - 'traefik.enable=true'
+      - 'traefik.docker.network=traefik_public'
+      - 'traefik.http.routers.jt-worker.rule=Host(`webhooks.junqueiraeteixeira.adv.br`)'
+      - 'traefik.http.routers.jt-worker.entrypoints=websecure'
+      - 'traefik.http.routers.jt-worker.tls=true'
+      - 'traefik.http.routers.jt-worker.tls.certresolver=letsencrypt'
+      - 'traefik.http.services.jt-worker.loadbalancer.server.port=4000'
+
+  web:
+    image: ghcr.io/${GITHUB_REPOSITORY}-web:${IMAGE_TAG:-latest}
+    container_name: jt-web
+    restart: unless-stopped
+    pull_policy: always
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgres://jt:${POSTGRES_PASSWORD}@postgres:5432/jt_dashboard
+      AUTH_SECRET: ${AUTH_SECRET}
+      NEXTAUTH_URL: https://dashboard.junqueiraeteixeira.adv.br
+      ADMIN_EMAIL: ${ADMIN_EMAIL}
+      ADMIN_PASSWORD_HASH: ${ADMIN_PASSWORD_HASH}
+    networks:
+      - jt_internal
+      - traefik_public
+    labels:
+      - 'com.centurylinklabs.watchtower.enable=true'
+      - 'traefik.enable=true'
+      - 'traefik.docker.network=traefik_public'
+      - 'traefik.http.routers.jt-web.rule=Host(`dashboard.junqueiraeteixeira.adv.br`)'
+      - 'traefik.http.routers.jt-web.entrypoints=websecure'
+      - 'traefik.http.routers.jt-web.tls=true'
+      - 'traefik.http.routers.jt-web.tls.certresolver=letsencrypt'
+      - 'traefik.http.services.jt-web.loadbalancer.server.port=3000'
+
+  # Watchtower — auto-deploy: monitora ghcr.io e atualiza containers
+  # marcados com `com.centurylinklabs.watchtower.enable=true`
+  watchtower:
+    image: containrrr/watchtower:latest
+    container_name: jt-watchtower
+    restart: unless-stopped
+    environment:
+      WATCHTOWER_LABEL_ENABLE: 'true'
+      WATCHTOWER_CLEANUP: 'true'
+      WATCHTOWER_INCLUDE_RESTARTING: 'true'
+      WATCHTOWER_POLL_INTERVAL: '30'
+      WATCHTOWER_ROLLING_RESTART: 'true'
+      WATCHTOWER_NO_STARTUP_MESSAGE: 'true'
+      TZ: America/Sao_Paulo
+      # Auth GHCR — Watchtower precisa ler /root/.docker/config.json
+      # Setup: docker login ghcr.io -u USER -p PAT (no host)
+      # E o config.json é montado no container abaixo
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ${DOCKER_CONFIG:-~/.docker}/config.json:/config.json:ro
+    networks:
+      - jt_internal
+    labels:
+      - 'com.centurylinklabs.watchtower.enable=false'
+
+  # Backup diário do Postgres às 03:00 BRT (06:00 UTC)
+  backup:
+    image: postgres:16-alpine
+    container_name: jt-backup
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      BACKUP_RETENTION_DAYS: ${BACKUP_RETENTION_DAYS:-14}
+    volumes:
+      - ./backups:/backups
+      - ./scripts/backup.sh:/usr/local/bin/backup.sh:ro
+    entrypoint: ['/bin/sh', '-c']
+    command:
+      - |
+        echo "Backup loop iniciado — diário às 03:00 BRT"
+        while true; do
+          NOW=$$(date -u +%s)
+          NEXT=$$(date -u -d "today 06:00" +%s 2>/dev/null || echo $$(($$NOW + 3600)))
+          if [ "$$NEXT" -le "$$NOW" ]; then NEXT=$$((NEXT + 86400)); fi
+          SLEEP=$$((NEXT - NOW))
+          echo "Próximo backup em $$SLEEP segundos"
+          sleep $$SLEEP
+          /usr/local/bin/backup.sh
+        done
+    networks:
+      - jt_internal
+    labels:
+      - 'com.centurylinklabs.watchtower.enable=false'
+
+volumes:
+  jt_postgres_data:
+  jt_redis_data:
+
+networks:
+  jt_internal:
+    driver: bridge
+  traefik_public:
+    external: true

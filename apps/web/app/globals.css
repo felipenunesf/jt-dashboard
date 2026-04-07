@@ -1,0 +1,35 @@
+@import 'tailwindcss';
+
+@theme {
+  /* JT brand — azul institucional */
+  --color-brand-50: #eff6ff;
+  --color-brand-100: #dbeafe;
+  --color-brand-200: #bfdbfe;
+  --color-brand-500: #1e3a8a;
+  --color-brand-600: #1e40af;
+  --color-brand-700: #1d4ed8;
+  --color-brand-900: #0f172a;
+
+  --font-display: 'Inter', system-ui, sans-serif;
+}
+
+* {
+  border-color: var(--color-gray-200);
+}
+
+html,
+body {
+  background: #f8fafc;
+  color: #0f172a;
+  font-family: var(--font-display);
+  font-feature-settings: 'cv11', 'ss01';
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Form elements default reset */
+input,
+button,
+select,
+textarea {
+  font: inherit;
+}

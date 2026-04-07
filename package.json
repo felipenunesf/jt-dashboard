@@ -1,0 +1,45 @@
+{
+  "name": "jt-dashboard",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Dashboard de atribuição Meta Ads + WhatsApp + GHL para JT Advocacia Médica",
+  "scripts": {
+    "dev": "pnpm -r --parallel dev",
+    "build": "pnpm -r build",
+    "lint": "eslint . --max-warnings=0",
+    "lint:fix": "eslint . --fix",
+    "format": "prettier --write \"**/*.{ts,tsx,js,mjs,json,md,yml,yaml}\" --ignore-path .gitignore",
+    "format:check": "prettier --check \"**/*.{ts,tsx,js,mjs,json,md,yml,yaml}\" --ignore-path .gitignore",
+    "typecheck": "pnpm -r typecheck",
+    "db:generate": "pnpm --filter @jt/db generate",
+    "db:migrate": "pnpm --filter @jt/db migrate",
+    "db:studio": "pnpm --filter @jt/db studio",
+    "prepare": "husky"
+  },
+  "devDependencies": {
+    "@commitlint/cli": "^19.6.1",
+    "@commitlint/config-conventional": "^19.6.0",
+    "@types/node": "^22.10.5",
+    "eslint": "^9.18.0",
+    "globals": "^15.14.0",
+    "husky": "^9.1.7",
+    "lint-staged": "^15.3.0",
+    "prettier": "^3.4.2",
+    "typescript": "^5.7.3",
+    "typescript-eslint": "^8.20.0"
+  },
+  "engines": {
+    "node": ">=24",
+    "pnpm": ">=10"
+  },
+  "packageManager": "pnpm@10.33.0",
+  "lint-staged": {
+    "*.{ts,tsx,js,mjs}": [
+      "prettier --write",
+      "eslint --max-warnings=0"
+    ],
+    "*.{json,md,yml,yaml}": [
+      "prettier --write"
+    ]
+  }
+}

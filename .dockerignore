@@ -1,0 +1,22 @@
+**/node_modules
+**/.next
+**/dist
+**/build
+**/.turbo
+**/coverage
+**/.pnpm-store
+.git
+.gitignore
+.env
+.env.local
+.env.*.local
+*.log
+.DS_Store
+.vscode
+.idea
+PROGRESS.md
+CLAUDE.md
+Jsons n8n teste - api oficial eventos
+Materiais visuais JT
+README.md
+docs
