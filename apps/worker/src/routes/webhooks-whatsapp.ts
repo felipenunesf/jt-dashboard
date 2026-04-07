@@ -28,13 +28,15 @@ export const whatsappWebhookRoutes: FastifyPluginAsync<WhatsappRoutesOptions> = 
 
   app.post<{
     Params: { instance: string };
+    Querystring: { t?: string };
     Body: unknown;
   }>('/whatsapp/:instance', async (request, reply) => {
     const { instance } = request.params;
 
-    // Validação opcional de shared secret
+    // Validação opcional de shared secret (header OU ?t= query string —
+    // Z-API não suporta headers customizados, então query param é fallback)
     if (sharedSecret) {
-      const provided = request.headers['x-jt-webhook-token'];
+      const provided = request.headers['x-jt-webhook-token'] ?? request.query.t;
       if (provided !== sharedSecret) {
         request.log.warn({ instance, ip: request.ip }, 'invalid webhook token');
         return reply.code(401).send({ error: 'unauthorized' });
