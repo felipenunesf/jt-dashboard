@@ -62,6 +62,9 @@ export const workerEnvSchema = baseEnvSchema.extend({
   GHL_PRIVATE_TOKEN: z.string().optional(),
   GHL_LOCATION_ID: z.string().optional(),
   GHL_WEBHOOK_SECRET: z.string().optional(),
+  // Shared secret pra proteger rotas /internal/* (sync manual, imports, etc).
+  // Gerar com: openssl rand -hex 32
+  INTERNAL_TOKEN: z.string().min(16),
 });
 
 export type BaseEnv = z.infer<typeof baseEnvSchema>;

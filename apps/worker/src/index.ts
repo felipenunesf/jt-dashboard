@@ -34,6 +34,7 @@ async function main() {
     scheduler,
     whatsappWebhookSecret: process.env.WHATSAPP_WEBHOOK_SECRET,
     ghlWebhookSecret: process.env.GHL_WEBHOOK_SECRET,
+    internalToken: env.INTERNAL_TOKEN,
   });
 
   try {

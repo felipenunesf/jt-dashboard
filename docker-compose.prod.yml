@@ -110,6 +110,7 @@ services:
       GHL_PRIVATE_TOKEN: ${GHL_PRIVATE_TOKEN:-}
       GHL_LOCATION_ID: ${GHL_LOCATION_ID:-}
       GHL_WEBHOOK_SECRET: ${GHL_WEBHOOK_SECRET:-}
+      INTERNAL_TOKEN: ${INTERNAL_TOKEN}
     networks:
       - jt_internal
       - network_swarm_public

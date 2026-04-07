@@ -2,6 +2,7 @@ import Fastify from 'fastify';
 import { logger } from './lib/logger.js';
 import { whatsappWebhookRoutes } from './routes/webhooks-whatsapp.js';
 import { ghlWebhookRoutes } from './routes/webhooks-ghl.js';
+import { internalRoutes } from './routes/internal.js';
 import { getHealthStatus } from './services/health.js';
 import type { Scheduler } from './jobs/scheduler.js';
 
@@ -9,9 +10,10 @@ export interface ServerDeps {
   scheduler?: Scheduler;
   whatsappWebhookSecret?: string;
   ghlWebhookSecret?: string;
+  internalToken: string;
 }
 
-export async function buildServer(deps: ServerDeps = {}) {
+export async function buildServer(deps: ServerDeps) {
   const app = Fastify({
     loggerInstance: logger,
     bodyLimit: 10 * 1024 * 1024, // 10MB para webhooks com payloads grandes
@@ -31,21 +33,18 @@ export async function buildServer(deps: ServerDeps = {}) {
     timestamp: new Date().toISOString(),
   }));
 
-  // Trigger manual de sync (admin only — só localhost no MVP)
-  app.post<{ Body: { backfillDays?: number } }>('/internal/sync-meta', async (request, reply) => {
-    if (!deps.scheduler) {
-      return reply.code(503).send({ error: 'scheduler not initialized' });
-    }
-    try {
-      const result = await deps.scheduler.triggerSync(request.body ?? {});
-      return { ok: true, ...result };
-    } catch (err) {
-      return reply.code(500).send({ error: (err as Error).message });
-    }
-  });
-
-  // Webhooks WhatsApp (Z-API)
+  // Rotas administrativas protegidas (sync manual, imports)
   if (deps.scheduler) {
+    await app.register(
+      async (scoped) =>
+        internalRoutes(scoped, {
+          scheduler: deps.scheduler!,
+          internalToken: deps.internalToken,
+        }),
+      { prefix: '/internal' },
+    );
+
+    // Webhooks WhatsApp (Z-API)
     await app.register(whatsappWebhookRoutes, {
       prefix: '/webhooks',
       sharedSecret: deps.whatsappWebhookSecret,

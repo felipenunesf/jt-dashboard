@@ -25,6 +25,10 @@ pnpm-debug.log*
 # Coverage / testes
 coverage
 
+# Dados pessoais / imports (nunca commitar PII)
+*.csv
+tintim-imports/
+
 # OS / editores
 .DS_Store
 .vscode
