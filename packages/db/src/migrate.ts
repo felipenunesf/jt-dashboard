@@ -1,6 +1,8 @@
 import { drizzle } from 'drizzle-orm/postgres-js';
 import { migrate } from 'drizzle-orm/postgres-js/migrator';
 import postgres from 'postgres';
+import { fileURLToPath } from 'node:url';
+import { dirname, resolve } from 'node:path';
 
 const databaseUrl = process.env.DATABASE_URL;
 if (!databaseUrl) {
@@ -13,7 +15,9 @@ const db = drizzle(sql);
 
 async function main() {
   console.info('Running migrations...');
-  await migrate(db, { migrationsFolder: './migrations' });
+  const __dirname = dirname(fileURLToPath(import.meta.url));
+  const migrationsFolder = resolve(__dirname, '../migrations');
+  await migrate(db, { migrationsFolder });
   console.info('Migrations complete.');
   await sql.end();
 }
