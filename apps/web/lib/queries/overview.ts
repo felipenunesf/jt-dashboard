@@ -86,6 +86,7 @@ export async function getOverviewKpis(filters: QueryFilters): Promise<OverviewKp
         COALESCE(SUM(purchase_value) FILTER (WHERE status = 'purchased'), 0) AS revenue
       FROM leads
       WHERE first_seen_at::date BETWEEN ${filters.from}::date AND ${filters.to}::date
+        AND ad_id IS NOT NULL
         ${leadWhereClause}
     )
     SELECT

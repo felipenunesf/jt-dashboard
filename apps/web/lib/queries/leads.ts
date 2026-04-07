@@ -86,6 +86,7 @@ export async function listLeads(filters: QueryFilters & { search?: string }): Pr
     FROM leads l
     LEFT JOIN meta_ads m ON m.ad_id = l.ad_id
     WHERE l.first_seen_at::date BETWEEN ${from}::date AND ${to}::date
+      AND l.ad_id IS NOT NULL
       ${sourceFilter}
       ${searchFilter}
     ORDER BY l.first_seen_at DESC
