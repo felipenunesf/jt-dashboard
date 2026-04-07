@@ -137,6 +137,7 @@ docker logs jt-watchtower --tail 50
 ```
 
 Linhas típicas em update:
+
 ```
 Found new ghcr.io/felipenunesfraga/jt-dashboard-web:latest image
 Stopping /jt-web (...)
@@ -162,18 +163,21 @@ IMAGE_TAG=sha-abc1234   # commit anterior
 ```
 
 Ou diretamente:
+
 ```bash
 docker pull ghcr.io/felipenunesfraga/jt-dashboard-web:sha-abc1234
 docker compose -f docker-compose.prod.yml up -d --no-deps web
 ```
 
 E **desabilitar Watchtower temporariamente** pra ele não voltar pra `latest`:
+
 ```bash
 docker stop jt-watchtower
 ```
 
 Quando estiver corrigido, fazer commit + push, GHA builda nova `latest`,
 e religar o Watchtower:
+
 ```bash
 docker start jt-watchtower
 ```

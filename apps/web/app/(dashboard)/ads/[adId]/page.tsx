@@ -3,13 +3,7 @@ import { notFound } from 'next/navigation';
 import { KpiCard } from '@/components/kpi-card';
 import { getAdById } from '@/lib/queries/ads';
 import { listLeadsByAd } from '@/lib/queries/leads';
-import {
-  daysAgoIso,
-  formatBRL,
-  formatInt,
-  formatPercent,
-  todayIso,
-} from '@/lib/format';
+import { daysAgoIso, formatBRL, formatInt, formatPercent, todayIso } from '@/lib/format';
 import { LeadStatusBadge } from '@/components/lead-status-badge';
 
 export const dynamic = 'force-dynamic';
@@ -62,9 +56,7 @@ export default async function AdDetailPage({
           <p className="text-xs text-slate-500 mt-1">
             {ad.adset_name} · ID {ad.ad_id} ·{' '}
             <span
-              className={
-                ad.status === 'ACTIVE' ? 'text-emerald-600 font-medium' : 'text-slate-400'
-              }
+              className={ad.status === 'ACTIVE' ? 'text-emerald-600 font-medium' : 'text-slate-400'}
             >
               {ad.status}
             </span>
@@ -119,9 +111,7 @@ export default async function AdDetailPage({
                 <tr key={lead.id} className="hover:bg-slate-50">
                   <td className="px-4 py-3">
                     <p className="font-medium text-slate-900">{lead.name ?? '(sem nome)'}</p>
-                    <p className="text-xs text-slate-500">
-                      {lead.phone ?? lead.email ?? '—'}
-                    </p>
+                    <p className="text-xs text-slate-500">{lead.phone ?? lead.email ?? '—'}</p>
                   </td>
                   <td className="px-4 py-3 text-xs">
                     <span

@@ -68,7 +68,10 @@ export type BaseEnv = z.infer<typeof baseEnvSchema>;
 export type WebEnv = z.infer<typeof webEnvSchema>;
 export type WorkerEnv = z.infer<typeof workerEnvSchema>;
 
-export function parseEnv<T extends z.ZodTypeAny>(schema: T, source: NodeJS.ProcessEnv = process.env): z.infer<T> {
+export function parseEnv<T extends z.ZodTypeAny>(
+  schema: T,
+  source: NodeJS.ProcessEnv = process.env,
+): z.infer<T> {
   const result = schema.safeParse(source);
   if (!result.success) {
     console.error('Invalid environment variables:');

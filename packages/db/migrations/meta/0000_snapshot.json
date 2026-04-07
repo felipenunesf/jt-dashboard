@@ -143,12 +143,8 @@
           "name": "capi_events_lead_id_leads_id_fk",
           "tableFrom": "capi_events",
           "tableTo": "leads",
-          "columnsFrom": [
-            "lead_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["lead_id"],
+          "columnsTo": ["id"],
           "onDelete": "set null",
           "onUpdate": "no action"
         }
@@ -158,9 +154,7 @@
         "capi_events_event_id_unique": {
           "name": "capi_events_event_id_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "event_id"
-          ]
+          "columns": ["event_id"]
         }
       },
       "policies": {},
@@ -300,12 +294,8 @@
           "name": "insights_daily_ad_id_meta_ads_ad_id_fk",
           "tableFrom": "insights_daily",
           "tableTo": "meta_ads",
-          "columnsFrom": [
-            "ad_id"
-          ],
-          "columnsTo": [
-            "ad_id"
-          ],
+          "columnsFrom": ["ad_id"],
+          "columnsTo": ["ad_id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -578,12 +568,8 @@
           "name": "leads_ad_id_meta_ads_ad_id_fk",
           "tableFrom": "leads",
           "tableTo": "meta_ads",
-          "columnsFrom": [
-            "ad_id"
-          ],
-          "columnsTo": [
-            "ad_id"
-          ],
+          "columnsFrom": ["ad_id"],
+          "columnsTo": ["ad_id"],
           "onDelete": "set null",
           "onUpdate": "no action"
         }
@@ -683,12 +669,8 @@
           "name": "messages_lead_id_leads_id_fk",
           "tableFrom": "messages",
           "tableTo": "leads",
-          "columnsFrom": [
-            "lead_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["lead_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -698,9 +680,7 @@
         "messages_wa_message_id_unique": {
           "name": "messages_wa_message_id_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "wa_message_id"
-          ]
+          "columns": ["wa_message_id"]
         }
       },
       "policies": {},

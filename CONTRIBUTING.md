@@ -6,6 +6,7 @@ mas segue convenções de open source pra manter o código sustentável.
 ## Fluxo de trabalho
 
 1. **Sempre trabalhe em uma branch** a partir de `main`:
+
    ```bash
    git checkout -b feat/nome-da-mudanca
    ```
@@ -21,6 +22,7 @@ mas segue convenções de open source pra manter o código sustentável.
    - `ci:` CI/CD
 
    Exemplos:
+
    ```
    feat(worker): add CompleteRegistration event on qualifier match
    fix(web): escape bcrypt $ in env file
@@ -37,6 +39,7 @@ mas segue convenções de open source pra manter o código sustentável.
    Se algo falhar, o commit é abortado.
 
 4. **Push pra branch + abre PR**:
+
    ```bash
    git push -u origin feat/nome-da-mudanca
    gh pr create
@@ -102,6 +105,7 @@ para o web.
 ## Dúvidas
 
 Consulte:
+
 - [`CLAUDE.md`](CLAUDE.md) — instruções pro Claude Code (também úteis pra humanos)
 - [`PROGRESS.md`](PROGRESS.md) — estado vivo do projeto
 - [`docs/`](docs/) — arquitetura, deploy, runbook

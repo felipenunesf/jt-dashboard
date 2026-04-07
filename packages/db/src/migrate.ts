@@ -12,9 +12,9 @@ const sql = postgres(databaseUrl, { max: 1 });
 const db = drizzle(sql);
 
 async function main() {
-  console.log('Running migrations...');
+  console.info('Running migrations...');
   await migrate(db, { migrationsFolder: './migrations' });
-  console.log('Migrations complete.');
+  console.info('Migrations complete.');
   await sql.end();
 }
 

@@ -8,25 +8,26 @@
 
 ## Status geral
 
-| Fase | Status | Notas |
-|---|---|---|
-| 0 — Setup monorepo | ✅ Completa | pnpm + Drizzle + Postgres + Redis local |
-| 1 — Sync Meta Marketing API | ✅ Completa | 160 ads, 144 insights rows, números batem com Ads Manager |
-| 2 — Dashboard read-only | ✅ Completa | Login + overview + tabela hierárquica funcionando |
-| 3.0 — Spike validação CTWA Z-API | ⏸ Pendente | Aguarda cliente criar conta Z-API |
-| 3.1 — Webhook WhatsApp | ✅ Completa | Receiver + worker + classificador testados E2E |
-| 4 — Worker CAPI | ✅ Completa | 4 eventos (Contact / Lead / CompleteRegistration / Purchase) — modo dry run ativo |
-| 5 — Integração GHL | ✅ Completa | Receiver + worker + builder site CAPI testados E2E (modo sem token) |
-| 6 — Dashboard completo | ✅ Completa | Funnel chart + filtro origem + drill-down ad + página leads |
-| 7 — Hardening + Deploy | ✅ Completa | Health endpoint, pg_dump cron, Dockerfiles, compose Portainer, docs |
-| 8 — Org sênior + Auto-deploy | ✅ Completa | README, ESLint, Husky, GitHub Actions, GHCR, Watchtower, docs/ |
-| Deploy 1-6 — Subir em produção | 🟡 Em andamento | Aguardando user reportar Portainer (Networks/Stacks) + criar DNS na Hostinger |
+| Fase                             | Status          | Notas                                                                             |
+| -------------------------------- | --------------- | --------------------------------------------------------------------------------- |
+| 0 — Setup monorepo               | ✅ Completa     | pnpm + Drizzle + Postgres + Redis local                                           |
+| 1 — Sync Meta Marketing API      | ✅ Completa     | 160 ads, 144 insights rows, números batem com Ads Manager                         |
+| 2 — Dashboard read-only          | ✅ Completa     | Login + overview + tabela hierárquica funcionando                                 |
+| 3.0 — Spike validação CTWA Z-API | ⏸ Pendente      | Aguarda cliente criar conta Z-API                                                 |
+| 3.1 — Webhook WhatsApp           | ✅ Completa     | Receiver + worker + classificador testados E2E                                    |
+| 4 — Worker CAPI                  | ✅ Completa     | 4 eventos (Contact / Lead / CompleteRegistration / Purchase) — modo dry run ativo |
+| 5 — Integração GHL               | ✅ Completa     | Receiver + worker + builder site CAPI testados E2E (modo sem token)               |
+| 6 — Dashboard completo           | ✅ Completa     | Funnel chart + filtro origem + drill-down ad + página leads                       |
+| 7 — Hardening + Deploy           | ✅ Completa     | Health endpoint, pg_dump cron, Dockerfiles, compose Portainer, docs               |
+| 8 — Org sênior + Auto-deploy     | ✅ Completa     | README, ESLint, Husky, GitHub Actions, GHCR, Watchtower, docs/                    |
+| Deploy 1-6 — Subir em produção   | 🟡 Em andamento | Aguardando user reportar Portainer (Networks/Stacks) + criar DNS na Hostinger     |
 
 ---
 
 ## Próximo passo imediato
 
 **Deploy em produção em andamento.** Servidor confirmado:
+
 - Hetzner VPS em `<HETZNER_VPS_IP>`
 - Portainer em `https://<PORTAINER_URL>`
 - Domínio: `junqueiraeteixeira.adv.br` (DNS na Hostinger, IP atual aponta pra Hostinger)
@@ -35,6 +36,7 @@
 ### Felipe precisa fazer 3 coisas em paralelo
 
 **A. Criar repositório GitHub** (~5 min):
+
 1. https://github.com/new → nome `jt-dashboard` → **Private**
 2. NÃO inicializar com README/license/gitignore (já temos)
 3. No terminal local:
@@ -50,10 +52,12 @@
 4. Verificar Actions rodando em `.../actions` (CI vai falhar até o `pnpm install` rodar limpo — ok)
 
 **B. Criar 2 DNS A records na Hostinger** (~5 min, propagação 5-30 min):
+
 - `dashboard` → `<HETZNER_VPS_IP>` (TTL 300)
 - `webhooks` → `<HETZNER_VPS_IP>` (TTL 300)
 
 **C. Reportar Portainer** (necessário pra eu ajustar o compose):
+
 - Logar em `https://<PORTAINER_URL>`
 - Listar **Networks** (procurar: `traefik_public`, `npm_default`, ou similar)
 - Listar nomes das **Stacks**
@@ -75,6 +79,7 @@
 ### Fase 0 — Setup monorepo ✅
 
 **O que foi feito**:
+
 - pnpm workspace com `apps/web`, `apps/worker`, `packages/db`, `packages/shared`
 - TypeScript estrito + Prettier + tsconfig.base.json
 - PostgreSQL 16 instalado via Homebrew, Redis também (Redis já tinha)
@@ -88,6 +93,7 @@
 ### Fase 1 — Sync Meta Marketing API ✅
 
 **O que foi feito**:
+
 - `apps/worker/src/services/meta-marketing.ts` — cliente HTTP da Marketing API
   (paginação automática, parser de erros, redação de token nos logs)
 - `apps/worker/src/workers/sync-meta.ts` — `syncCatalogForAccount` +
@@ -98,6 +104,7 @@
   `META_SYSTEM_USER_TOKEN`
 
 **Resultado do primeiro sync** (4 dias com gasto: 03-06/abr):
+
 - 160 ads sincronizados (62 CA03 + 98 CA02), 26 campanhas
 - 39 ativos hoje + 121 pausados
 - 144 rows de insights (4 dias × ads ativos no período)
@@ -109,12 +116,14 @@
 **Cliente confirmou**: "Batem, pode continuar"
 
 **Bugs corrigidos durante a fase**:
+
 - `landing_page_views` não é field do `/insights` → veio como `actions[type=landing_page_view]`
 - FK violation em `insights_daily.ad_id` → filtra `knownAdIds` antes do batch insert
 
 ### Fase 2 — Dashboard read-only ✅
 
 **O que foi feito**:
+
 - Auth.js v5 Credentials Provider, single-user via env (`ADMIN_EMAIL` + `ADMIN_PASSWORD_HASH`)
 - Middleware Next.js protege tudo menos `/login` e `/api/auth`
 - Layout `(dashboard)` com sidebar (logo JT azul + nav)
@@ -127,6 +136,7 @@
 - Drizzle queries direto nos Server Components
 
 **Bugs corrigidos**:
+
 - Hash bcrypt no `.env` interpretado como `$XX` variável → escapado com `\$`
 - Cliente DB lazy via Proxy (ESM hoist roda `client.ts` antes do `dotenv.config()`)
 - Webpack do Next não resolve `.js → .ts` em pacotes workspace → `extensionAlias`
@@ -138,6 +148,7 @@
 ### Fase 3.1 — Webhook WhatsApp ✅
 
 **O que foi feito**:
+
 - `apps/worker/src/routes/webhooks-whatsapp.ts` — `POST /webhooks/whatsapp/:instance`
   - Validação opcional de `X-JT-Webhook-Token` (shared secret)
   - Persiste em `webhook_inbox` antes de processar (safety net)
@@ -160,6 +171,7 @@
   → classificar → atualizar status
 
 **Cenários testados** (todos green, 5/5):
+
 1. Lead novo + referral CTWA → `attribution_method='ctwa_clid'`, ad_id resolvido
 2. Mensagem com frase de qualificação → `qualifier_match`, lead → `qualified`
 3. Mensagem com frase de compra → `purchase_match`, lead → `purchased`, R$ 5.000
@@ -170,14 +182,15 @@
 
 **Mapa de eventos definido pelo cliente**:
 
-| Trigger | Eventos disparados |
-|---|---|
-| Lead novo (1ª mensagem) | `Contact` |
-| Frase de qualificação | `Lead` + `CompleteRegistration` |
+| Trigger                                         | Eventos disparados                           |
+| ----------------------------------------------- | -------------------------------------------- |
+| Lead novo (1ª mensagem)                         | `Contact`                                    |
+| Frase de qualificação                           | `Lead` + `CompleteRegistration`              |
 | Frase de fechamento (sem ter qualificado antes) | `Lead` + `CompleteRegistration` + `Purchase` |
-| Frase de fechamento (já qualificado) | `Purchase` |
+| Frase de fechamento (já qualificado)            | `Purchase`                                   |
 
 **O que foi feito**:
+
 - `apps/worker/src/services/meta-capi.ts` — `buildWhatsappCapiPayload()` +
   `resolveDefaultPixel()`. Resolução de pixel em cascata:
   `meta_ads.pixel_id → META_ACCOUNTS env (fallback) → MissingPixelError`
@@ -198,6 +211,7 @@ montado e persistido em `capi_events`, mas **a chamada à API Meta é pulada**.
 Trocar para `false` quando tiver `META_TEST_EVENT_CODE` real do Events Manager.
 
 **Cenários testados** (todos green, 5/5):
+
 1. Lead novo → 1 evento `Contact`
 2. Qualificou → 2 eventos `Lead` + `CompleteRegistration`
 3. Fechou → 1 evento `Purchase`
@@ -205,6 +219,7 @@ Trocar para `false` quando tiver `META_TEST_EVENT_CODE` real do Events Manager.
 5. Lead novo + compra direta (pula qualificação) → 4 eventos: `Contact` + `Lead` + `CompleteRegistration` + `Purchase`
 
 **Payload validado** (visto via psql jsonb_pretty):
+
 ```json
 {
   "data": [{
@@ -229,6 +244,7 @@ Trocar para `false` quando tiver `META_TEST_EVENT_CODE` real do Events Manager.
 ### Fase 5 — Integração GHL ✅
 
 **O que foi feito**:
+
 - `apps/worker/src/services/ghl.ts` — `GhlClient` HTTP (V2 API,
   `services.leadconnectorhq.com`, header `Version: 2021-07-28`).
   Métodos: `getOpportunity`, `getContact`, `listPipelines`. Helpers:
@@ -265,11 +281,13 @@ Trocar para `false` quando tiver `META_TEST_EVENT_CODE` real do Events Manager.
 - `setGhlCapiEnqueuer` para evitar circular dep com scheduler
 
 **Cenários testados** (todos green, 3/3 — modo sem token, dados inline):
+
 1. Opportunity nova entra → `Contact` enfileirado, lead criado com `attribution_method='fbclid'`, fbclid+fbp+email+phone+nome capturados do payload
 2. Stage muda pra qualified → `Lead` + `CompleteRegistration`, lead → `qualified`
 3. Stage muda pra closed → `Purchase` com valor `R$ 7.500` (do `monetary_value` do payload, sobrescreveu o default), lead → `purchased`
 
 **Payload site validado** (visto via psql jsonb_pretty):
+
 ```json
 {
   "data": [{
@@ -292,6 +310,7 @@ Trocar para `false` quando tiver `META_TEST_EVENT_CODE` real do Events Manager.
 ```
 
 **Stage IDs de teste** (atualizar com IDs reais quando GHL estiver configurado):
+
 ```sql
 UPDATE settings SET value = '{"qualified_stage_id": "<ID_REAL>", "closed_stage_id": "<ID_REAL>"}'::jsonb
 WHERE key = 'ghl_stage_map';
@@ -303,6 +322,7 @@ Pra descobrir os IDs reais quando o token estiver setado, vai dar pra usar
 ### Fase 6 — Dashboard completo ✅
 
 **O que foi feito**:
+
 - `lib/queries/overview.ts` — `LeadSource` type (`'all' | 'whatsapp' | 'site_ghl'`),
   `QueryFilters` interface, helpers `adDestinationFilter` + `leadSourceFilter`.
   `getOverviewKpis` e `getSpendTimeseries` agora aceitam filtro de origem.
@@ -340,6 +360,7 @@ Pra descobrir os IDs reais quando o token estiver setado, vai dar pra usar
   origem, 7 colunas (Lead, Origem, Status, Anúncio, Atribuição, Valor, Quando).
 
 **Cenários testados** (todos green):
+
 1. Overview com 7 leads de teste (5 WA + 2 Site) — funil renderiza com
    contagens corretas, KPIs batem
 2. Filtro `source=site_ghl` na página `/leads` — só os 2 leads Site aparecem
@@ -354,10 +375,12 @@ intencional — não temos como saber a origem deles. Quando o cliente tiver mai
 campanhas, um sync futuro pode tentar resolver via `tracking_specs` ou nome.
 
 **Backfill `destination_type`** (rodado uma vez):
+
 ```sql
 UPDATE meta_ads SET destination_type = 'whatsapp'
 WHERE campaign_name LIKE '%WHATSAPP%' AND destination_type IS NULL;
 ```
+
 Isso classificou 85 ads automaticamente. Os outros 75 ficaram null (campanhas
 que não são CTWA).
 
@@ -366,6 +389,7 @@ que não são CTWA).
 **O que foi feito**:
 
 #### Health endpoints
+
 - `apps/worker/src/services/health.ts` (novo) — `getHealthStatus()` faz check
   de DB (latency), Redis ping, e carrega 6 métricas operacionais:
   `last_meta_sync_age_minutes`, `pending_capi_events`, `failed_capi_events_24h`,
@@ -380,6 +404,7 @@ que não são CTWA).
 - Web `GET /api/health` — agora também checa DB e retorna status estruturado
 
 #### Dockerfiles
+
 - `Dockerfile.worker` — single-stage, usa `node:24-alpine` + `pnpm install --frozen-lockfile`,
   usa **tsx em produção** (decisão pragmática: simplifica monorepo, sem
   build step de TS, worker é long-lived sem cold start crítico, +5MB de tsx).
@@ -392,7 +417,9 @@ que não são CTWA).
   n8n de referência, materiais visuais, docs.
 
 #### docker-compose.prod.yml
+
 Stack pronta pra Portainer com 5 serviços:
+
 - `postgres` — PostgreSQL 16 com volume persistente
 - `redis` — Redis 7 com `maxmemory 256mb` + LRU
 - `worker` — JT Worker com healthcheck
@@ -403,12 +430,14 @@ Stack pronta pra Portainer com 5 serviços:
 - Network `traefik_public` (external) + `jt_internal` (bridge)
 
 #### Backup
+
 - `scripts/backup.sh` — `pg_dump` → gzip → `backups/jt_dashboard_<timestamp>.sql.gz`
 - Retenção configurável via `BACKUP_RETENTION_DAYS` (default 14)
 - Container `backup` faz loop com `sleep` calculado pra rodar todo dia às 03:00 BRT
 - Script de restore documentado em DEPLOY.md e RUNBOOK.md
 
 #### Documentação
+
 - `docs/DEPLOY.md` — guia passo-a-passo do primeiro deploy:
   - Pré-requisitos (Docker, Traefik, DNS)
   - Geração de credenciais (`hash-password.mjs`, `openssl rand`)
@@ -435,17 +464,20 @@ Stack pronta pra Portainer com 5 serviços:
   - Logs
 
 #### `.env.production.example`
+
 Template documentado com TODAS as variáveis (obrigatórias + opcionais),
 comentários explicando como gerar cada uma e regras (ex: `$` precisa ser
 escapado como `$$` no compose).
 
 **Cenário testado**:
+
 - Worker subiu normalmente, `/health/live` retorna 200 instantâneo
 - `/health` completo retorna JSON estruturado com checks DB/Redis + métricas
 - Status `degraded` corretamente sinalizado quando sync Meta passou de 90 min
 - Typecheck do worker e do web ambos passam
 
 **O que NÃO foi feito** (intencional, falta input externo):
+
 - Build dos Dockerfiles em si (precisaria de Docker rodando, e o cliente usa
   Mac do usuário sem Docker — `docker-compose.prod.yml` será buildado no
   Portainer do JT durante deploy)
@@ -459,6 +491,7 @@ Pedido pelo Felipe pra deixar o repo nível "empresa séria" antes do deploy.
 **O que foi feito**:
 
 #### Arquivos profissionais
+
 - `README.md` — descrição, badges, setup, scripts, deploy, segurança, licença
 - `LICENSE` — proprietary (Felipe + JT)
 - `CONTRIBUTING.md` — fluxo de branch, conventional commits, padrões
@@ -467,6 +500,7 @@ Pedido pelo Felipe pra deixar o repo nível "empresa séria" antes do deploy.
 - `.github/CODEOWNERS` — Felipe owner global
 
 #### Linting + format + hooks
+
 - `eslint.config.mjs` — flat config moderna (ESLint 9):
   - `@typescript-eslint/no-unused-vars` (com pattern `^_`)
   - `consistent-type-imports`
@@ -481,6 +515,7 @@ Pedido pelo Felipe pra deixar o repo nível "empresa séria" antes do deploy.
 - `engines.node` bumpado pra 24
 
 #### GitHub Actions
+
 - `.github/workflows/ci.yml` — typecheck + lint + format:check em PRs e
   pushes pra `main`. Cancela runs concorrentes.
 - `.github/workflows/release.yml` — em pushes pra `main` (ignorando docs):
@@ -490,12 +525,14 @@ Pedido pelo Felipe pra deixar o repo nível "empresa séria" antes do deploy.
   - Permissão `packages: write`
 
 #### Templates GitHub
+
 - `.github/PULL_REQUEST_TEMPLATE.md` — checklist (typecheck, lint, format,
   test manual, atualizar PROGRESS/CLAUDE)
 - `.github/ISSUE_TEMPLATE/bug.md` — template estruturado
 - `.github/ISSUE_TEMPLATE/feature.md` — template estruturado
 
 #### Watchtower auto-deploy
+
 - `docker-compose.prod.yml` reescrito:
   - Imagens vêm de `ghcr.io/${GITHUB_REPOSITORY}-{web,worker}:${IMAGE_TAG}`
   - Novo serviço `watchtower` (containrrr/watchtower) com:
@@ -511,6 +548,7 @@ Pedido pelo Felipe pra deixar o repo nível "empresa séria" antes do deploy.
     `webhooks.junqueiraeteixeira.adv.br`)
 
 #### Documentação técnica
+
 - `docs/ARCHITECTURE.md` — diagrama lógico, fluxos detalhados (sync Meta,
   WhatsApp→CAPI, GHL→CAPI, send-capi-event, dashboard render), 7 tabelas,
   decisões técnicas chave, entradas/saídas externas
@@ -521,6 +559,7 @@ Pedido pelo Felipe pra deixar o repo nível "empresa séria" antes do deploy.
   com exemplo concreto, primeiro deploy, atualizações automáticas
 
 #### Atualizações no `CLAUDE.md`
+
 - Lista de documentos vivos atualizada
 - Stack table atualizada com CI/CD
 - Estrutura completa do repo
@@ -531,6 +570,7 @@ Pedido pelo Felipe pra deixar o repo nível "empresa séria" antes do deploy.
 - Lista expandida de segredos a NUNCA expor
 
 **Arquivos criados/modificados**:
+
 ```
 + README.md
 + LICENSE
@@ -561,6 +601,7 @@ porque o usuário pode querer revisar antes. Quando rodar pnpm install, os hooks
 do husky são instalados automaticamente pelo script `prepare`.
 
 **Próxima ação concreta**:
+
 ```bash
 cd "/Users/felipenunesfraga/Desktop/Projetos/NEW TINTIM"
 pnpm install
@@ -573,17 +614,17 @@ git commit -m "chore: initial commit"
 
 ## Decisões importantes do cliente
 
-| Decisão | Valor |
-|---|---|
-| Provider WhatsApp | **Z-API** (não-oficial, 2 números). Spike CTWA pendente |
-| Valor de venda | **Fixo** R$ 5.000 (`settings.default_purchase_value`) |
-| Multi-account Meta | **2 accounts**: CA03 (`act_1096702648134272`), CA02 (`act_345426295001979`) |
-| Pixel | **1 só** pra ambas as accounts: `1545838446017240` |
-| Auth dashboard | Single-user, só Felipe (`felipe@jt.local`) |
-| Frase qualificação | "Somos especialistas em cuidar de médicos" |
-| Frase fechamento | "Agradecemos por confiar no JT Advocacia Médica" |
+| Decisão              | Valor                                                                        |
+| -------------------- | ---------------------------------------------------------------------------- |
+| Provider WhatsApp    | **Z-API** (não-oficial, 2 números). Spike CTWA pendente                      |
+| Valor de venda       | **Fixo** R$ 5.000 (`settings.default_purchase_value`)                        |
+| Multi-account Meta   | **2 accounts**: CA03 (`act_1096702648134272`), CA02 (`act_345426295001979`)  |
+| Pixel                | **1 só** pra ambas as accounts: `1545838446017240`                           |
+| Auth dashboard       | Single-user, só Felipe (`felipe@jt.local`)                                   |
+| Frase qualificação   | "Somos especialistas em cuidar de médicos"                                   |
+| Frase fechamento     | "Agradecemos por confiar no JT Advocacia Médica"                             |
 | Mapa de eventos CAPI | Contact (lead novo) → Lead+CompleteRegistration (qualif) → Purchase (fechou) |
-| n8n | **Não usar** — JSONs são só referência |
+| n8n                  | **Não usar** — JSONs são só referência                                       |
 
 ---
 

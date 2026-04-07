@@ -16,6 +16,7 @@ curl https://dashboard.jt.com.br/api/health | jq
 ```
 
 **Status possíveis**:
+
 - `ok`: tudo funcionando
 - `degraded`: DB e Redis OK, mas alguma métrica preocupante
   (sync Meta atrasado >90min, capi events failed >10/24h, ou webhook
@@ -24,13 +25,13 @@ curl https://dashboard.jt.com.br/api/health | jq
 
 ## Métricas principais (no `/health` do worker)
 
-| Métrica | Significado | Alerta se |
-|---|---|---|
-| `last_meta_sync_age_minutes` | Quando rodou o último sync Meta | > 90 (cron deveria ser horário) |
-| `pending_capi_events` | Eventos CAPI ainda na fila | > 50 (acúmulo, worker engasgado?) |
-| `failed_capi_events_24h` | Eventos CAPI que falharam definitivamente | > 10 (token vencido? bug?) |
-| `unprocessed_webhooks` | Webhooks recebidos mas não processados | > 20 |
-| `unprocessed_webhooks_age_minutes` | Idade do webhook mais antigo não processado | > 10 |
+| Métrica                            | Significado                                 | Alerta se                         |
+| ---------------------------------- | ------------------------------------------- | --------------------------------- |
+| `last_meta_sync_age_minutes`       | Quando rodou o último sync Meta             | > 90 (cron deveria ser horário)   |
+| `pending_capi_events`              | Eventos CAPI ainda na fila                  | > 50 (acúmulo, worker engasgado?) |
+| `failed_capi_events_24h`           | Eventos CAPI que falharam definitivamente   | > 10 (token vencido? bug?)        |
+| `unprocessed_webhooks`             | Webhooks recebidos mas não processados      | > 20                              |
+| `unprocessed_webhooks_age_minutes` | Idade do webhook mais antigo não processado | > 10                              |
 
 Recomendado: configurar **UptimeRobot** (free) pra fazer GET em `/health` a cada
 5 min e alertar por email se ficar `degraded` ou `down` por >2 checks.
@@ -91,6 +92,7 @@ WHERE key = 'default_purchase_value';
 ### Configurar Stage IDs do GHL
 
 Quando o token GHL estiver setado, descobrir os IDs:
+
 ```bash
 # Listar pipelines da location (precisa criar endpoint admin pra isso)
 docker exec -it jt-worker sh -c 'cd apps/worker && tsx -e "
@@ -102,6 +104,7 @@ console.log(JSON.stringify(pipelines, null, 2));
 ```
 
 Aí atualizar:
+
 ```sql
 UPDATE settings
 SET value = '{"qualified_stage_id": "<id_real>", "closed_stage_id": "<id_real>"}'::jsonb,
@@ -163,6 +166,7 @@ DELETE FROM capi_events WHERE event_id = '<sha256>';
 ```
 
 E disparar manualmente via tsx no worker:
+
 ```bash
 docker exec -it jt-worker sh -c 'cd apps/worker && tsx -e "
 import { sendCapiEvent } from \"./src/workers/send-capi-event.js\";
@@ -205,6 +209,7 @@ gunzip -c /opt/jt-dashboard/backups/jt_dashboard_20260406-060000.sql.gz | \
 ### Backup off-site (recomendado mas não automatizado)
 
 Sincronizar `./backups/` com S3/Google Drive/Dropbox via cron host. Ex:
+
 ```bash
 # Crontab do host (não do container)
 0 4 * * * aws s3 sync /opt/jt-dashboard/backups/ s3://jt-backups/ --delete
@@ -278,6 +283,7 @@ docker logs -f jt-backup
 ```
 
 Filtro útil pra ver só erros:
+
 ```bash
 docker logs jt-worker 2>&1 | grep -E '(ERROR|FATAL|fail)' | tail -50
 ```

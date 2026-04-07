@@ -23,9 +23,7 @@ export function LeadStatusBadge({ status }: { status: string }) {
     className: 'bg-slate-100 text-slate-600',
   };
   return (
-    <span
-      className={`inline-block px-2 py-0.5 rounded-md text-xs font-medium ${style.className}`}
-    >
+    <span className={`inline-block px-2 py-0.5 rounded-md text-xs font-medium ${style.className}`}>
       {style.label}
     </span>
   );

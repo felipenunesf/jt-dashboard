@@ -1,10 +1,7 @@
 import type { FastifyInstance, FastifyPluginAsync } from 'fastify';
 import { db, webhookInbox } from '@jt/db';
 import type { Queue } from 'bullmq';
-import type {
-  ProcessGhlJobData,
-  ProcessGhlJobResult,
-} from '../workers/process-ghl-webhook.js';
+import type { ProcessGhlJobData, ProcessGhlJobResult } from '../workers/process-ghl-webhook.js';
 
 export interface GhlRoutesOptions {
   /** Token compartilhado opcional no header X-JT-Webhook-Token. */

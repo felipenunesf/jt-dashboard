@@ -8,7 +8,6 @@ import {
   flattenActions,
   normalizeAccountId,
   resolveCreativeThumbnail,
-  type MetaAdRaw,
   type MetaInsightRaw,
 } from '../services/meta-marketing.js';
 
@@ -347,10 +346,7 @@ export async function runSyncMeta(
     try {
       adsSynced += await syncCatalogForAccount(client, account);
     } catch (err) {
-      log.error(
-        { account: account.name, err: (err as Error).message },
-        'catalog sync failed',
-      );
+      log.error({ account: account.name, err: (err as Error).message }, 'catalog sync failed');
     }
   }
 
@@ -362,10 +358,7 @@ export async function runSyncMeta(
     try {
       insightsRows += await syncInsightsForAccount(client, account, days);
     } catch (err) {
-      log.error(
-        { account: account.name, err: (err as Error).message },
-        'insights sync failed',
-      );
+      log.error({ account: account.name, err: (err as Error).message }, 'insights sync failed');
     }
   }
 

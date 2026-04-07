@@ -48,9 +48,7 @@ export function TimeseriesChart({ data }: { data: Point[] }) {
           <YAxis
             tick={{ fontSize: 11, fill: '#64748b' }}
             stroke="#cbd5e1"
-            tickFormatter={(v: number) =>
-              v >= 1000 ? `${(v / 1000).toFixed(1)}k` : String(v)
-            }
+            tickFormatter={(v: number) => (v >= 1000 ? `${(v / 1000).toFixed(1)}k` : String(v))}
           />
           <Tooltip
             contentStyle={{

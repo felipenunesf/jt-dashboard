@@ -78,7 +78,7 @@ export interface MetaInsightRaw {
 }
 
 export interface MetaTrackingSpec {
-  'fb_pixel'?: string[];
+  fb_pixel?: string[];
   dataset?: string[];
   page?: string[];
   [key: string]: unknown;
@@ -244,7 +244,15 @@ export class MetaApiClient {
       return (await response.json()) as T;
     }
     const text = await response.text();
-    let parsedError: { error?: { message?: string; type?: string; code?: number; error_subcode?: number; fbtrace_id?: string } } = {};
+    let parsedError: {
+      error?: {
+        message?: string;
+        type?: string;
+        code?: number;
+        error_subcode?: number;
+        fbtrace_id?: string;
+      };
+    } = {};
     try {
       parsedError = JSON.parse(text) as typeof parsedError;
     } catch {
@@ -295,7 +303,9 @@ export function redactToken(url: string): string {
  * Ex: actions[{action_type: "onsite_conversion.messaging_conversation_started_7d", value: "5"}]
  *  → { 'onsite_conversion.messaging_conversation_started_7d': '5' }
  */
-export function flattenActions(actions: MetaInsightActionRaw[] | undefined): Record<string, string> {
+export function flattenActions(
+  actions: MetaInsightActionRaw[] | undefined,
+): Record<string, string> {
   if (!actions || actions.length === 0) return {};
   const out: Record<string, string> = {};
   for (const action of actions) {

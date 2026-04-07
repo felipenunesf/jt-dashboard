@@ -46,9 +46,7 @@ export default async function LoginPage({
 
           <form action={loginAction} className="space-y-4">
             <div>
-              <label className="block text-xs font-medium text-slate-700 mb-1.5">
-                Email
-              </label>
+              <label className="block text-xs font-medium text-slate-700 mb-1.5">Email</label>
               <input
                 type="email"
                 name="email"
@@ -58,9 +56,7 @@ export default async function LoginPage({
               />
             </div>
             <div>
-              <label className="block text-xs font-medium text-slate-700 mb-1.5">
-                Senha
-              </label>
+              <label className="block text-xs font-medium text-slate-700 mb-1.5">Senha</label>
               <input
                 type="password"
                 name="password"

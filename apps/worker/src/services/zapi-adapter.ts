@@ -110,9 +110,7 @@ const palmUpSchema = z
             id: z.string().optional(),
             timestamp: z.union([z.number(), z.string()]).optional(),
             type: z.string().optional(),
-            text: z
-              .union([z.object({ body: z.string() }).passthrough(), z.string()])
-              .optional(),
+            text: z.union([z.object({ body: z.string() }).passthrough(), z.string()]).optional(),
             referral: referralSchema.optional().nullable(),
           })
           .passthrough()

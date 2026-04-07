@@ -32,21 +32,9 @@ export default async function LeadsPage({
         </div>
 
         <form className="flex items-center gap-2">
-          <input
-            type="hidden"
-            name="from"
-            value={from}
-          />
-          <input
-            type="hidden"
-            name="to"
-            value={to}
-          />
-          <input
-            type="hidden"
-            name="source"
-            value={source}
-          />
+          <input type="hidden" name="from" value={from} />
+          <input type="hidden" name="to" value={to} />
+          <input type="hidden" name="source" value={source} />
           <input
             type="text"
             name="q"
@@ -90,9 +78,7 @@ export default async function LeadsPage({
                 <tr key={lead.id} className="hover:bg-slate-50">
                   <td className="px-4 py-3">
                     <p className="font-medium text-slate-900">{lead.name ?? '(sem nome)'}</p>
-                    <p className="text-xs text-slate-500">
-                      {lead.phone ?? lead.email ?? '—'}
-                    </p>
+                    <p className="text-xs text-slate-500">{lead.phone ?? lead.email ?? '—'}</p>
                   </td>
                   <td className="px-4 py-3 text-xs">
                     <span

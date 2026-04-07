@@ -159,10 +159,7 @@ export class GhlClient {
  * uma das palavras-chave fornecidas. Útil para fbclid/fbp porque o key real
  * depende de como o cliente nomeou o campo no GHL.
  */
-export function findCustomFieldValue(
-  contact: GhlContact,
-  keywords: string[],
-): string | null {
+export function findCustomFieldValue(contact: GhlContact, keywords: string[]): string | null {
   // 1. Tenta direto no top-level (alguns providers expõem assim)
   for (const kw of keywords) {
     const direct = (contact as Record<string, unknown>)[kw];

@@ -123,4 +123,3 @@ export function FilterBar({ from, to, source, showSourceFilter = true }: FilterB
     </div>
   );
 }
-

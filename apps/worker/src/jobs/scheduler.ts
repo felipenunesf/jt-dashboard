@@ -2,11 +2,7 @@ import { Queue, Worker, type Job } from 'bullmq';
 import type { MetaAccount } from '@jt/shared';
 import { redisConnection } from '../lib/redis.js';
 import { logger } from '../lib/logger.js';
-import {
-  runSyncMeta,
-  type SyncMetaJobData,
-  type SyncMetaJobResult,
-} from '../workers/sync-meta.js';
+import { runSyncMeta, type SyncMetaJobData, type SyncMetaJobResult } from '../workers/sync-meta.js';
 import {
   processWaWebhook,
   type ProcessWaJobData,
@@ -161,7 +157,10 @@ export class Scheduler {
       },
     );
 
-    log.info({ accounts: this.options.metaAccounts.length, cron: '5 * * * *' }, 'sync-meta scheduled');
+    log.info(
+      { accounts: this.options.metaAccounts.length, cron: '5 * * * *' },
+      'sync-meta scheduled',
+    );
   }
 
   async triggerSync(data: SyncMetaJobData = {}): Promise<{ jobId: string | undefined }> {
@@ -252,10 +251,7 @@ export class Scheduler {
       );
     });
 
-    log.info(
-      { hasToken: !!this.options.ghlToken },
-      'process-ghl-webhook worker started',
-    );
+    log.info({ hasToken: !!this.options.ghlToken }, 'process-ghl-webhook worker started');
   }
 
   // ==========================================================================

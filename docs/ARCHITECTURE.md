@@ -124,38 +124,38 @@ sub-segundo.
 
 ## Dados — 7 tabelas
 
-| Tabela | Função |
-|---|---|
-| `meta_ads` | Catálogo Meta denormalizado (campaign/adset/ad em uma row) |
-| `insights_daily` | Métricas diárias por ad (spend, impressions, clicks, etc.) |
-| `leads` | **Unificada**: source='whatsapp' OR 'site_ghl' |
-| `messages` | Mensagens WhatsApp (FK leads) |
-| `capi_events` | Audit + dedup de eventos CAPI enviados |
-| `webhook_inbox` | Safety net — toda chamada externa antes de processar |
-| `settings` | KV editável (frases-padrão, stage map GHL, valor padrão, etc.) |
+| Tabela           | Função                                                         |
+| ---------------- | -------------------------------------------------------------- |
+| `meta_ads`       | Catálogo Meta denormalizado (campaign/adset/ad em uma row)     |
+| `insights_daily` | Métricas diárias por ad (spend, impressions, clicks, etc.)     |
+| `leads`          | **Unificada**: source='whatsapp' OR 'site_ghl'                 |
+| `messages`       | Mensagens WhatsApp (FK leads)                                  |
+| `capi_events`    | Audit + dedup de eventos CAPI enviados                         |
+| `webhook_inbox`  | Safety net — toda chamada externa antes de processar           |
+| `settings`       | KV editável (frases-padrão, stage map GHL, valor padrão, etc.) |
 
 Schema completo: [`packages/db/src/schema.ts`](../packages/db/src/schema.ts).
 
 ## Decisões técnicas chave
 
-| Decisão | Por quê |
-|---|---|
-| **Postgres em vez de MySQL** | Cliente já tem; JSONB nativo; window functions; matviews disponíveis |
-| **Sem matviews** | Volume baixo; joins diretos rendem sub-segundo; menos código |
-| **Tabela `leads` unificada** | Mesmo conceito de "lead" pra WA e site; evita 2 tabelas paralelas com SQL duplicado |
-| **`meta_ads` denormalizado** | Zero joins no dashboard; trade-off aceito (campaign_name duplica) |
-| **`tsx` em runtime no worker** | Worker é long-lived; elimina build TS no monorepo; ~5MB extra aceitável |
-| **Next.js standalone com `outputFileTracingRoot`** | Deploy do Next em monorepo sem hacks |
-| **BullMQ Redis** | Repeatable jobs garantidos; retry exponencial nativo; queue persistente |
-| **Auth.js single-user via env** | Sem tabela `users`; sem complexidade; bcrypt hash em ENV |
-| **Watchtower auto-deploy** | Sem SSH, sem webhook complicado; push imagem → atualiza sozinho |
+| Decisão                                            | Por quê                                                                             |
+| -------------------------------------------------- | ----------------------------------------------------------------------------------- |
+| **Postgres em vez de MySQL**                       | Cliente já tem; JSONB nativo; window functions; matviews disponíveis                |
+| **Sem matviews**                                   | Volume baixo; joins diretos rendem sub-segundo; menos código                        |
+| **Tabela `leads` unificada**                       | Mesmo conceito de "lead" pra WA e site; evita 2 tabelas paralelas com SQL duplicado |
+| **`meta_ads` denormalizado**                       | Zero joins no dashboard; trade-off aceito (campaign_name duplica)                   |
+| **`tsx` em runtime no worker**                     | Worker é long-lived; elimina build TS no monorepo; ~5MB extra aceitável             |
+| **Next.js standalone com `outputFileTracingRoot`** | Deploy do Next em monorepo sem hacks                                                |
+| **BullMQ Redis**                                   | Repeatable jobs garantidos; retry exponencial nativo; queue persistente             |
+| **Auth.js single-user via env**                    | Sem tabela `users`; sem complexidade; bcrypt hash em ENV                            |
+| **Watchtower auto-deploy**                         | Sem SSH, sem webhook complicado; push imagem → atualiza sozinho                     |
 
 ## Entradas / saídas externas
 
-| Direção | Sistema | Como |
-|---|---|---|
-| ⬇ Pull | Meta Marketing API | System User Token, hourly cron |
-| ⬇ Push (webhook) | Z-API (WhatsApp) | `POST /webhooks/whatsapp/:instance` |
-| ⬇ Push (webhook) | Go High Level | `POST /webhooks/ghl` |
-| ⬆ Push | Meta Conversions API | `POST /v22.0/{pixel_id}/events` |
-| ⬇ Read (opcional) | Go High Level API | enriquece dados quando token disponível |
+| Direção           | Sistema              | Como                                    |
+| ----------------- | -------------------- | --------------------------------------- |
+| ⬇ Pull            | Meta Marketing API   | System User Token, hourly cron          |
+| ⬇ Push (webhook)  | Z-API (WhatsApp)     | `POST /webhooks/whatsapp/:instance`     |
+| ⬇ Push (webhook)  | Go High Level        | `POST /webhooks/ghl`                    |
+| ⬆ Push            | Meta Conversions API | `POST /v22.0/{pixel_id}/events`         |
+| ⬇ Read (opcional) | Go High Level API    | enriquece dados quando token disponível |

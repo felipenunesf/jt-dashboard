@@ -1,15 +1,7 @@
-import {
-  db,
-  leads,
-  messages,
-  metaAds,
-  webhookInbox,
-  type NewLead,
-  type NewMessage,
-} from '@jt/db';
+import { db, leads, messages, metaAds, webhookInbox, type NewLead, type NewMessage } from '@jt/db';
 import { and, eq, sql } from 'drizzle-orm';
 import { logger } from '../lib/logger.js';
-import { hashEmail, hashPhone, normalizePhone } from '../lib/crypto.js';
+import { hashPhone, normalizePhone } from '../lib/crypto.js';
 import { normalizeZApiMessage, type NormalizedMessage } from '../services/zapi-adapter.js';
 import { classify, resolveAdByWelcomeMessage } from '../services/classifier.js';
 import { loadAllSettings, type AllSettings } from '../services/settings.js';
@@ -74,9 +66,7 @@ async function getCachedSettings(): Promise<AllSettings> {
   return cachedSettings;
 }
 
-export async function processWaWebhook(
-  data: ProcessWaJobData,
-): Promise<ProcessWaJobResult> {
+export async function processWaWebhook(data: ProcessWaJobData): Promise<ProcessWaJobResult> {
   const { inboxId } = data;
   const inboxRow = await db
     .select()
@@ -209,10 +199,7 @@ interface UpsertedLead {
   previousStatus: string | null;
 }
 
-async function upsertLead(
-  msg: NormalizedMessage,
-  appSettings: AllSettings,
-): Promise<UpsertedLead> {
+async function upsertLead(msg: NormalizedMessage, appSettings: AllSettings): Promise<UpsertedLead> {
   const phoneNormalized = normalizePhone(msg.phone);
   const phoneHash = hashPhone(msg.phone);
 
@@ -220,7 +207,13 @@ async function upsertLead(
   const existing = await db
     .select()
     .from(leads)
-    .where(and(eq(leads.source, 'whatsapp'), eq(leads.waInstance, msg.instance), eq(leads.phone, phoneNormalized)))
+    .where(
+      and(
+        eq(leads.source, 'whatsapp'),
+        eq(leads.waInstance, msg.instance),
+        eq(leads.phone, phoneNormalized),
+      ),
+    )
     .limit(1);
 
   if (existing[0]) {

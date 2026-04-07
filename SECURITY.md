@@ -5,6 +5,7 @@
 Encontrou um problema de segurança? **Não abra issue pública.**
 
 Envie um email pra: `felipe@junqueiraeteixeira.adv.br` com:
+
 - Descrição do problema
 - Passos pra reproduzir
 - Impacto potencial

@@ -80,16 +80,16 @@ Mais detalhes em [`docs/SETUP.md`](docs/SETUP.md).
 
 ## Stack
 
-| Camada | Tecnologia |
-|---|---|
-| Monorepo | pnpm workspaces |
-| Linguagem | TypeScript estrito |
-| Web | Next.js 15 App Router · Tailwind v4 · Recharts · Auth.js v5 |
-| Worker | Fastify · BullMQ · Pino |
-| DB | PostgreSQL 16 · Drizzle ORM |
-| Cache/Queue | Redis 7 |
-| CI/CD | GitHub Actions · GHCR · Watchtower |
-| Deploy | Docker Compose · Portainer |
+| Camada      | Tecnologia                                                  |
+| ----------- | ----------------------------------------------------------- |
+| Monorepo    | pnpm workspaces                                             |
+| Linguagem   | TypeScript estrito                                          |
+| Web         | Next.js 15 App Router · Tailwind v4 · Recharts · Auth.js v5 |
+| Worker      | Fastify · BullMQ · Pino                                     |
+| DB          | PostgreSQL 16 · Drizzle ORM                                 |
+| Cache/Queue | Redis 7                                                     |
+| CI/CD       | GitHub Actions · GHCR · Watchtower                          |
+| Deploy      | Docker Compose · Portainer                                  |
 
 ## Scripts
 

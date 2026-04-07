@@ -96,6 +96,7 @@ em `/Users/.../NEW TINTIM/.env` (não em `apps/worker/.env`).
 ### Hash bcrypt está falhando no login
 
 `$` não escapado. Use `\$2a\$10\$...` no `.env`. Test:
+
 ```bash
 node -e "console.log(process.env.ADMIN_PASSWORD_HASH?.length)"
 # deve imprimir 60

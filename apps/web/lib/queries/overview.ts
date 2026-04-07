@@ -53,7 +53,9 @@ export async function getOverviewKpis(filters: QueryFilters): Promise<OverviewKp
   const adFilter = adDestinationFilter(filters.source);
   const leadFilter = leadSourceFilter(filters.source);
 
-  const adWhereClause = adFilter ? sql`AND ad_id IN (SELECT ad_id FROM meta_ads WHERE ${adFilter})` : sql``;
+  const adWhereClause = adFilter
+    ? sql`AND ad_id IN (SELECT ad_id FROM meta_ads WHERE ${adFilter})`
+    : sql``;
   const leadWhereClause = leadFilter ? sql`AND ${leadFilter}` : sql``;
 
   const result = await db.execute<{

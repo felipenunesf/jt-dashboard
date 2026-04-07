@@ -1,6 +1,6 @@
 import { db } from '@jt/db';
 import { sql } from 'drizzle-orm';
-import type { LeadSource, QueryFilters } from './overview';
+import type { QueryFilters } from './overview';
 
 export interface LeadRow {
   id: string;
@@ -98,7 +98,10 @@ export async function listLeads(filters: QueryFilters & { search?: string }): Pr
 /**
  * Lista leads de um anúncio específico (para drill-down).
  */
-export async function listLeadsByAd(adId: string, range: { from: string; to: string }): Promise<LeadRow[]> {
+export async function listLeadsByAd(
+  adId: string,
+  range: { from: string; to: string },
+): Promise<LeadRow[]> {
   const result = await db.execute<LeadRow & Record<string, unknown>>(sql`
     SELECT
       l.id,

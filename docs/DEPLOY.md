@@ -50,12 +50,14 @@ chmod 600 ~/.docker/config.json
 ### 2. Gerar credenciais
 
 **Hash da senha admin** (rodar na sua máquina local):
+
 ```bash
 node apps/web/scripts/hash-password.mjs "sua_senha_real_aqui"
 # Copia a saída — usaremos no Portainer
 ```
 
 **AUTH_SECRET**:
+
 ```bash
 openssl rand -base64 48
 ```
@@ -118,6 +120,7 @@ curl https://dashboard.junqueiraeteixeira.adv.br/api/health | jq
 ```
 
 Esperado:
+
 ```json
 {
   "status": "ok",
@@ -163,15 +166,18 @@ Ver progresso em <https://github.com/felipenunesfraga/jt-dashboard/actions>.
 ### Z-API
 
 No painel Z-API, configure o webhook de mensagens recebidas:
+
 - URL: `https://webhooks.junqueiraeteixeira.adv.br/webhooks/whatsapp/instance-1`
 - (Substitua `instance-1` pelo nome de cada instância)
 
 Se setou `WHATSAPP_WEBHOOK_SECRET`, adicione header:
+
 - `X-JT-Webhook-Token: <mesmo valor do env>`
 
 ### GHL
 
 No GHL Workflows:
+
 1. Trigger: "Pipeline Stage Changed"
 2. Action: "Webhook"
 3. URL: `https://webhooks.junqueiraeteixeira.adv.br/webhooks/ghl`
@@ -183,11 +189,13 @@ No GHL Workflows:
 Diários às 03:00 BRT em `/opt/jt-dashboard/backups/`. Retenção 14 dias.
 
 Forçar manual:
+
 ```bash
 docker exec -it jt-backup /usr/local/bin/backup.sh
 ```
 
 Restore:
+
 ```bash
 gunzip -c backups/jt_dashboard_20260407-060000.sql.gz | \
   docker exec -i jt-postgres psql -U jt -d jt_dashboard

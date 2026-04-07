@@ -1,6 +1,6 @@
 import { db } from '@jt/db';
 import { sql } from 'drizzle-orm';
-import type { LeadSource, QueryFilters } from './overview';
+import type { QueryFilters } from './overview';
 
 export interface AdRow {
   ad_id: string;
@@ -153,7 +153,10 @@ export async function getAdsWithMetrics(filters: QueryFilters): Promise<AdRow[]>
  * Busca um ad específico com métricas e suas associações.
  * Usado na página de drill-down /ads/[adId].
  */
-export async function getAdById(adId: string, range: { from: string; to: string }): Promise<AdRow | null> {
+export async function getAdById(
+  adId: string,
+  range: { from: string; to: string },
+): Promise<AdRow | null> {
   const result = await db.execute<{
     ad_id: string;
     ad_name: string | null;
@@ -332,8 +335,7 @@ export function buildHierarchy(ads: AdRow[]): CampaignNode[] {
 
   // Calcula derivados
   for (const campaign of campaignMap.values()) {
-    campaign.ctr =
-      campaign.impressions > 0 ? (campaign.clicks / campaign.impressions) * 100 : 0;
+    campaign.ctr = campaign.impressions > 0 ? (campaign.clicks / campaign.impressions) * 100 : 0;
     campaign.cpl_qualified = campaign.qualified > 0 ? campaign.spend / campaign.qualified : null;
 
     for (const adset of campaign.adsets) {

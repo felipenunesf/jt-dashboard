@@ -28,17 +28,17 @@ Quem quer ver a tabela completa: `PROGRESS.md`.
 
 ## Stack
 
-| Camada | Tecnologia |
-|---|---|
-| Monorepo | pnpm workspaces |
-| Linguagem | TypeScript estrito (`noUncheckedIndexedAccess`) |
-| Web | Next.js 15 App Router · Tailwind v4 · Recharts · Auth.js v5 |
-| Worker | Fastify · BullMQ · Pino · `tsx` em runtime |
-| DB | PostgreSQL 16 + Drizzle ORM |
-| Cache/Queue | Redis 7 |
-| CI | GitHub Actions (`ci.yml`) — typecheck + lint + format |
-| Release | GitHub Actions (`release.yml`) → GHCR → Watchtower |
-| Deploy | Docker Compose · Portainer · Traefik · Hetzner |
+| Camada      | Tecnologia                                                  |
+| ----------- | ----------------------------------------------------------- |
+| Monorepo    | pnpm workspaces                                             |
+| Linguagem   | TypeScript estrito (`noUncheckedIndexedAccess`)             |
+| Web         | Next.js 15 App Router · Tailwind v4 · Recharts · Auth.js v5 |
+| Worker      | Fastify · BullMQ · Pino · `tsx` em runtime                  |
+| DB          | PostgreSQL 16 + Drizzle ORM                                 |
+| Cache/Queue | Redis 7                                                     |
+| CI          | GitHub Actions (`ci.yml`) — typecheck + lint + format       |
+| Release     | GitHub Actions (`release.yml`) → GHCR → Watchtower          |
+| Deploy      | Docker Compose · Portainer · Traefik · Hetzner              |
 
 ## Estrutura
 
@@ -132,6 +132,7 @@ gh pr create
 `feat:` `fix:` `docs:` `chore:` `refactor:` `perf:` `test:` `ci:` `build:` `style:` `revert:`
 
 Exemplos:
+
 ```
 feat(worker): add CompleteRegistration on qualifier match
 fix(web): escape bcrypt $ in env
@@ -182,6 +183,7 @@ chore: bump deps
 ## Segredos — REGRA INEGOCIÁVEL
 
 **NUNCA logar, ecoar, retornar em mensagens, ou citar em conversa**:
+
 - `META_SYSTEM_USER_TOKEN`
 - `ADMIN_PASSWORD_HASH`
 - `AUTH_SECRET`

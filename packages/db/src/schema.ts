@@ -76,7 +76,9 @@ export const insightsDaily = pgTable(
 export const leads = pgTable(
   'leads',
   {
-    id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
+    id: uuid('id')
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
     source: text('source').notNull(), // 'whatsapp' | 'site_ghl'
 
     // Contato
@@ -135,7 +137,9 @@ export const leads = pgTable(
 export const messages = pgTable(
   'messages',
   {
-    id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
+    id: uuid('id')
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
     leadId: uuid('lead_id')
       .notNull()
       .references(() => leads.id, { onDelete: 'cascade' }),
@@ -158,7 +162,9 @@ export const messages = pgTable(
 export const capiEvents = pgTable(
   'capi_events',
   {
-    id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
+    id: uuid('id')
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
     eventId: text('event_id').notNull().unique(), // hash determinístico
     eventName: text('event_name').notNull(), // 'Lead' | 'QualifiedLead' | 'Purchase'
     leadId: uuid('lead_id').references(() => leads.id, { onDelete: 'set null' }),
